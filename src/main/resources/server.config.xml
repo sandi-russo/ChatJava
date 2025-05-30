@@ -1,0 +1,8 @@
+<database>
+    <ip>127.0.0.1</ip>
+    <porta>3306</porta>
+    <nomeDB>dbChat</nomeDB>
+    <username>root</username>
+    <password>admin</password>
+</database>
+
