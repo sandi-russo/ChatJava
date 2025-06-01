@@ -1,5 +1,6 @@
 package chat.db;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 
 public abstract class GestoreDB {
@@ -21,4 +22,6 @@ public abstract class GestoreDB {
     public abstract void connettiti() throws SQLException;
 
     public abstract void chiudi() throws SQLException;
+
+    public abstract Connection getConnection() throws SQLException;
 }

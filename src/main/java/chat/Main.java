@@ -11,10 +11,8 @@ import chat.db.MySQLManager;
 import chat.utils.XMLConfigLoaderDB;
 import java.sql.*;
 
-
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+
 
 public class Main extends Application {
     @Override
@@ -50,69 +48,44 @@ public class Main extends Application {
         System.out.println("Ao sei un " + ciao.getTipo());
 
 
-
         XMLConfigLoaderDB.DBConfig config = null;
         MySQLManager dbManager = null;
 
-        System.out.println("[1] Caricamento server.config.xml...");
+        System.out.println("1-Caricamento server.config.xml...");
         config = XMLConfigLoaderDB.caricaConfigurazione("server.config.xml");
         System.out.println("    Config OK: DB su " + config.ip + ":" + config.porta + ", DB: " + config.nomeDB);
 
-        System.out.println("[2] Creazione MySQLManager...");
-        dbManager = new MySQLManager(
-                config.ip,
-                config.porta,
-                config.nomeDB,
-                config.username,
-                config.password
-        );
-        System.out.println("    MySQLManager OK.");
+        System.out.println("2-Creazione MySQLManager...");
+        try {
+            dbManager = new MySQLManager(
+                    config.ip,
+                    config.porta,
+                    config.nomeDB,
+                    config.username,
+                    config.password
+            );
+            System.out.println("MySQLManager OK.");
 
-        System.out.println("[3] Tentativo di chiamata a connettiti()...");
-        dbManager.connettiti();
-        Connection conn = dbManager.getConnection(); // ottengo la connessione
+            System.out.println("3-Tentativo di connessione al database...");
+            dbManager.connettiti(); // Uso diretto del metodo connettiti()
 
-        // Query che ci interessa
-        String selectTuttiGliUtenti = "SELECT id, nome, cognome, email, password, avatar FROM Utenti";
+            if (dbManager.isConnected()) {
+                System.out.println("Connessione OK");
 
-        try(Statement query = conn.createStatement()){
-            ResultSet risultato = query.executeQuery(selectTuttiGliUtenti);
-            boolean trovati = false;    // Se non trova nulla
-            while (risultato.next()) {
-                trovati = true; // Finché nel record set (risultato) che abbiamo preso tramite la query ci sono altre righe, fai il while
-                int id = risultato.getInt("id");
-                String nome = risultato.getString("nome");
-                String cognome = risultato.getString("cognome");
-                String email = risultato.getString("email");
-                String password = risultato.getString("password"); // ATTENZIONE: Evita di stampare password in produzione!
-                String avatar = risultato.getString("avatar");
+                // Ottengo la connessione
+                Connection conn = dbManager.getConnection();
 
-                System.out.printf("ID: %-3d | Nome: %-15s | Cognome: %-15s | Email: %-25s | Password: %-10s | Img: %s\n",
-                        id, nome, cognome, email, password, avatar);
-                // *1 - Prendo tutti i dati degli utenti dal db e li metto ad uno ad uno nella HashMap creata inizialmente
-                utenti.put(id, new Utente(id, nome, cognome, email, password, avatar));
+                // Operazioni sul db
+                dbManager.creaHashMapUtenti(conn, utenti);
+                utenti.stampaHashMap();
+
+                System.out.println("4-Chiusura della connessione...");
+                dbManager.chiudi();
+            } else {
+                System.out.println("Connessione fallita");
             }
-            if (!trovati) {
-                System.out.println("Nessun utente trovato nella tabella 'utenti' o la tabella è vuota.");
-            }
-        } catch (SQLException eQuery) {
-            System.err.println("Errore nella query");
-            System.err.println("    Query: " + selectTuttiGliUtenti);
-            System.err.println("    Messaggio: " + eQuery.getMessage());
+        } catch (SQLException e) {
+            System.err.println("Errore: " + e.getMessage());
         }
-
-        // Test, controllo se riesco a manipolare gli utenti per metterli tutti in una HashMap da usare all'interno del database
-        System.out.println("Stampa utenti dalla hashmap del db:");
-
-        // Nel for, creo una Map che ha come avrà come dati una chiave di tipo Integer e un valore di tipo Utente.
-        // Ad uno ad uno uso questa mappa per iterare nei dati all'interno di utenti.
-        // Grazie a questa HashMap possiamo prendere tutti i dati dal db (vedi *1) e mainpolarli come vogliamo
-        for(Map.Entry<Integer, Utente> utente : utenti.entrySet()){
-            Integer chiave = utente.getKey();
-            Utente valore = utente.getValue();
-            //System.out.println("Chiave: " + chiave + ", Valore: " + valore);
-            valore.printlnAllDatiUtente();
-        }
-
     }
 }
