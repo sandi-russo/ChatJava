@@ -1,5 +1,7 @@
 package chat;
 
+import chat.common.TipoMessaggio;
+import chat.common.Utente;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -11,6 +13,8 @@ import java.sql.*;
 
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main extends Application {
     @Override
@@ -25,7 +29,7 @@ public class Main extends Application {
     public static void main(String[] args) throws SQLException {
         //launch();
 
-        /*
+
         // Uso questa parte qui per fare dei test con la Map (chiave valore) che servirà al server per caricare gli utenti e alla chat per sapere quali utenti sono abilitati in quella chat
         System.out.println("Ciao!");
 
@@ -34,17 +38,16 @@ public class Main extends Application {
         // A inizio server (o anche durante ogni volta che si aggiorna) carica tutti gli utenti presenti nel db o in ogni chat
         utenti.put(1, new Utente(1, "Paola", "Cariddi", "Parola.Cariddi@gmail.com", "1234", "./Paola.png"));
         utenti.put(2, new Utente(2, "Paola", "Cariddi", "Parola.Cariddi@gmail.com", "1234", "./Paola.png"));
-        */
+
         // Dato l'ID dell'utente in una chat:
-        /*
+
         Utente u = utenti.get(1); // Ottieni l'oggetto
 
         System.out.println(u.getNome());
 
         TipoMessaggio ciao;
         ciao = TipoMessaggio.DOCUMENTO;
-        System.out.println("Ao sei un " + ciao);
-        */
+        System.out.println("Ao sei un " + ciao.getTipo());
 
 
 
@@ -86,6 +89,8 @@ public class Main extends Application {
 
                 System.out.printf("ID: %-3d | Nome: %-15s | Cognome: %-15s | Email: %-25s | Password: %-10s | Img: %s\n",
                         id, nome, cognome, email, password, avatar);
+                // *1 - Prendo tutti i dati degli utenti dal db e li metto ad uno ad uno nella HashMap creata inizialmente
+                utenti.put(id, new Utente(id, nome, cognome, email, password, avatar));
             }
             if (!trovati) {
                 System.out.println("Nessun utente trovato nella tabella 'utenti' o la tabella è vuota.");
@@ -94,6 +99,19 @@ public class Main extends Application {
             System.err.println("Errore nella query");
             System.err.println("    Query: " + selectTuttiGliUtenti);
             System.err.println("    Messaggio: " + eQuery.getMessage());
+        }
+
+        // Test, controllo se riesco a manipolare gli utenti per metterli tutti in una HashMap da usare all'interno del database
+        System.out.println("Stampa utenti dalla hashmap del db:");
+
+        // Nel for, creo una Map che ha come avrà come dati una chiave di tipo Integer e un valore di tipo Utente.
+        // Ad uno ad uno uso questa mappa per iterare nei dati all'interno di utenti.
+        // Grazie a questa HashMap possiamo prendere tutti i dati dal db (vedi *1) e mainpolarli come vogliamo
+        for(Map.Entry<Integer, Utente> utente : utenti.entrySet()){
+            Integer chiave = utente.getKey();
+            Utente valore = utente.getValue();
+            //System.out.println("Chiave: " + chiave + ", Valore: " + valore);
+            valore.printlnAllDatiUtente();
         }
 
     }

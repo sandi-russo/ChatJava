@@ -41,6 +41,10 @@ public class Utente {
         return avatar;
     }
 
+    public void printlnAllDatiUtente(){
+        System.out.println("id: " + this.id + " nome: " + this.nome + " cognome: " + this.cognome + " email: " + this.email + " password: " + this.password + " avatar: " + this.avatar);
+    }
+
     public void setId(int id) {
         this.id = id;
     }
