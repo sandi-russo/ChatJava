@@ -15,4 +15,13 @@ public enum TipoMessaggio {
     public String getTipo(){
         return tipo;
     }
+
+    /*
+    // Test enumeratore
+        TipoMessaggio ciao;
+        ciao = TipoMessaggio.DOCUMENTO;
+        System.out.println("Ao sei un " + ciao.getTipo());
+
+
+     */
 }

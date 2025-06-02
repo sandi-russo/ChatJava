@@ -1,9 +1,12 @@
 package chat.db;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import chat.common.HashMapUtenti;
+import chat.common.Utente;
 
+import java.sql.*;
+import java.util.Map;
+
+// Gestisco le connessioni al DB e le operazioni
 public class MySQLManager extends GestoreDB {
     private boolean isConnected;
     private Connection connection;

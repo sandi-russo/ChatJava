@@ -1,7 +1,6 @@
 package chat;
 
-import chat.common.TipoMessaggio;
-import chat.common.Utente;
+import chat.common.HashMapUtenti;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -27,26 +26,8 @@ public class Main extends Application {
     public static void main(String[] args) throws SQLException {
         //launch();
 
-
-        // Uso questa parte qui per fare dei test con la Map (chiave valore) che servirà al server per caricare gli utenti e alla chat per sapere quali utenti sono abilitati in quella chat
-        System.out.println("Ciao!");
-
-        // La Map è un dizionario chiave valore, in questo caso ID - Utente.
-        Map<Integer, Utente> utenti = new HashMap<>();
-        // A inizio server (o anche durante ogni volta che si aggiorna) carica tutti gli utenti presenti nel db o in ogni chat
-        utenti.put(1, new Utente(1, "Paola", "Cariddi", "Parola.Cariddi@gmail.com", "1234", "./Paola.png"));
-        utenti.put(2, new Utente(2, "Paola", "Cariddi", "Parola.Cariddi@gmail.com", "1234", "./Paola.png"));
-
-        // Dato l'ID dell'utente in una chat:
-
-        Utente u = utenti.get(1); // Ottieni l'oggetto
-
-        System.out.println(u.getNome());
-
-        TipoMessaggio ciao;
-        ciao = TipoMessaggio.DOCUMENTO;
-        System.out.println("Ao sei un " + ciao.getTipo());
-
+        // La Map è un dizionario chiave valore, in questo caso ID (intero) - Utente.
+        HashMapUtenti utenti = new HashMapUtenti();
 
         XMLConfigLoaderDB.DBConfig config = null;
         MySQLManager dbManager = null;

@@ -1,5 +1,5 @@
 <database>
-    <ip>26.13.123.24</ip>
+    <ip>127.0.0.1</ip>
     <porta>3306</porta>
     <nomeDB>dbChat</nomeDB>
     <username>root</username>
