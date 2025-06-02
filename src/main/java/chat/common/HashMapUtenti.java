@@ -20,21 +20,30 @@ public class HashMapUtenti {
     }
 
 
-    public void stampaHashMap(){
-        System.out.println("Stampo gli utenti del DB:");
-        /*
-        Nel for, creo una Map che ha come avrà come dati una chiave di tipo Integer e un valore di tipo Utente.
-        Ad uno ad uno uso questa mappa per iterare nei dati all'interno di utenti.
-        Grazie a questa HashMap possiamo prendere tutti i dati dal db (vedi *1) e manipolarli come vogliamo
-         */
+    public String stampaHashMap(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("Stampo gli utenti del DB:\n");
 
         for(Map.Entry<Integer, Utente> utente : utenti.entrySet()){
-            Integer chiave = utente.getKey();
             Utente valore = utente.getValue();
-            //System.out.println("Chiave: " + chiave + ", Valore: " + valore);
-            valore.printlnAllDatiUtente();
+            sb.append(valore.getId()).append(" - ")
+                    .append(valore.getNome()).append(" ")
+                    .append(valore.getCognome()).append(" - ")
+                    .append(valore.getEmail()).append("\n");
         }
+
+        return sb.toString();
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (Utente u : utenti.values()) {
+            sb.append(u.toString()).append("\n");
+        }
+        return sb.toString();
+    }
+
 
     public void aggiungiUtente(int id, String nome, String cognome, String email, String password, String avatar){
         utenti.put(id, new Utente(id, nome, cognome, email, password, avatar));
