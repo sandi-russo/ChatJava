@@ -3,7 +3,8 @@ package chat.utils;
 import chat.common.HashMapUtenti;
 import chat.db.MySQLManager;
 import javafx.fxml.FXML;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.ListView;
+import javafx.scene.control.Label;
 
 
 import java.awt.*;
@@ -14,10 +15,19 @@ public class Controller {
     private HashMapUtenti utenti = new HashMapUtenti();
 
     @FXML
-    private TextArea stampaArea;
+    private Label labelTitolo;
 
     @FXML
-    public void stampaButton() {
+    private ListView<String> listUtenti; // Forzo la list view a essere <String>
+
+    @FXML
+    public void initialize() {
+        labelTitolo.setText("Lista Utenti nel DB");
+    }
+
+
+    @FXML
+    public void stampaUtenti() {
         try {
             XMLConfigLoaderDB.DBConfig config = XMLConfigLoaderDB.caricaConfigurazione("server.config.xml");
             MySQLManager db = new MySQLManager(config.ip, config.porta, config.nomeDB, config.username, config.password);
@@ -27,18 +37,20 @@ public class Controller {
                 Connection conn = db.getConnection();
                 db.creaHashMapUtenti(conn, utenti);
 
-                // Costruisci l'output
-                StringBuilder output = new StringBuilder("Utenti nel DB:\n");
-                utenti.getUtenti().values().forEach(u -> output.append(u.toString()).append("\n"));
+                listUtenti.getItems().clear(); // svuota la lista
 
-                stampaArea.setText(output.toString());
-                // db.chiudi(); // facoltativo: commentalo se vuoi tenerla aperta
+                utenti.getUtenti().values().forEach(u ->
+                        listUtenti.getItems().add(u.toString())
+                );
+
             } else {
-                stampaArea.setText("Errore di connessione al DB.");
+                listUtenti.getItems().setAll("Errore di connessione al DB.");
             }
         } catch (Exception e) {
             e.printStackTrace();
-            stampaArea.setText("Errore: " + e.getMessage());
+            listUtenti.getItems().setAll("Errore: " + e.getMessage());
         }
     }
+
+
 }

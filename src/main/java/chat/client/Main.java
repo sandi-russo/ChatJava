@@ -12,8 +12,9 @@ public class Main extends Application {
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("/fxml/welcome.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 500, 500);
-        stage.setTitle("Hello!");
+        stage.setTitle("Chat");
         stage.setScene(scene);
+        stage.sizeToScene(); // faccio in modo che la finestra si adatti ai contenuti
         stage.show();
     }
 

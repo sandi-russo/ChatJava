@@ -71,7 +71,8 @@ public class Utente {
 
     @Override
     public String toString() {
-        return nome + " " + cognome + " - " + email;
+        return id + " - " + nome + " " + cognome + " - " + email;
     }
+
 
 }
