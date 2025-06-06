@@ -4,76 +4,109 @@ import chat.common.HashMapUtenti;
 import chat.common.Utente;
 
 import java.sql.*;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-// Gestisco le connessioni al DB e le operazioni
-public class MySQLManager extends GestoreDB {
+public class MySQLManager {
+    // Campi per le credenziali del database
+    private final String ip;
+    private final int porta;
+    private final String nomeDB;
+    private final String username;
+    private final String password;
+
+    // Campi per la gestione dello stato della connessione
     private boolean isConnected;
     private Connection connection;
 
-    public MySQLManager(String ip, int porta, String nomeDB, String username, String password) throws SQLException {
-        super(ip, porta, nomeDB, username, password);
-        this.isConnected = false;
+    public MySQLManager(String ip, int porta, String nomeDB, String username, String password) {
+        this.ip = ip;
+        this.porta = porta;
+        this.nomeDB = nomeDB;
+        this.username = username;
+        this.password = password;
+        this.isConnected = false; // Inizialmente non siamo connessi
+        this.connection = null;
     }
 
     public boolean isConnected() {
-        return isConnected;
+        try {
+            /* isConnected è vero solo se l'oggetto connection, non è nullo e la connessione è ancora valida. */
+            return isConnected && connection != null && !connection.isClosed();
+        } catch (SQLException e) {
+            isConnected = false;
+            return false;
+        }
     }
 
-    @Override
     public void connettiti() throws SQLException {
-        if (!isConnected) {
+        if (!isConnected()) { // Usiamo il metodo isConnected() per un controllo più sicuro
             String url = "jdbc:mysql://" + this.ip + ":" + this.porta + "/" + this.nomeDB +
                     "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
             this.connection = DriverManager.getConnection(url, this.username, this.password);
-            isConnected = true;
-            System.out.println("Connesso al database");
+            this.isConnected = true;
+            System.out.println("Connesso al database.");
         }
     }
 
-    @Override
     public void chiudi() throws SQLException {
-        if (isConnected && connection != null) {
+        if (isConnected()) {
             connection.close();
-            isConnected = false;
-            System.out.println("Connessione al database chiusa");
+            this.isConnected = false;
+            this.connection = null;
+            System.out.println("Connessione al database chiusa.");
         }
     }
 
-    // Restituisce la connessione attiva
-    @Override
     public Connection getConnection() throws SQLException {
-        if (!isConnected) {
-            connettiti(); // Riutilizziamo il metodo connettiti()
+        // Se non siamo connessi, tentiamo di connetterci.
+        if (!isConnected()) {
+            connettiti();
         }
         return connection;
     }
 
-    public void creaHashMapUtenti(Connection conn, HashMapUtenti utenti){
-        String selectTuttiGliUtenti = "SELECT id, nome, cognome, email, password, avatar FROM Utenti";
+    public void popolaHashMapUtenti(HashMapUtenti hashMapUtenti) throws SQLException {
+        hashMapUtenti.svuota(); // Svuota la mappa prima di riempirla
+        List<Utente> tuttiGliUtenti = getAllUsers();
 
-        try(Statement query = conn.createStatement()){
-            ResultSet risultato = query.executeQuery(selectTuttiGliUtenti);
-            boolean trovati = false;    // Se non trova nulla
-            while (risultato.next()) {
-                trovati = true; // Finché nel record set (risultato) che abbiamo preso tramite la query ci sono altre righe, fai il while
-                int id = risultato.getInt("id");
-                String nome = risultato.getString("nome");
-                String cognome = risultato.getString("cognome");
-                String email = risultato.getString("email");
-                String password = risultato.getString("password"); // ATTENZIONE: Evita di stampare password in produzione!
-                String avatar = risultato.getString("avatar");
-
-                // *1 - Prendo tutti i dati degli utenti dal db e li metto ad uno ad uno nella HashMap creata inizialmente
-                utenti.aggiungiUtente(id, nome, cognome, email, password, avatar);
-            }
-            if (!trovati) {
-                System.out.println("Nessun utente trovato nella tabella 'utenti' o la tabella è vuota.");
-            }
-        } catch (SQLException eQuery) {
-            System.err.println("Errore nella query");
-            System.err.println("    Query: " + selectTuttiGliUtenti);
-            System.err.println("    Messaggio: " + eQuery.getMessage());
+        // Popola la mappa usando il suo metodo aggiungiUtente
+        for (Utente utente : tuttiGliUtenti) {
+            hashMapUtenti.aggiungiUtente(
+                    utente.getId(),
+                    utente.getUsername(),
+                    utente.getNome(),
+                    utente.getCognome(),
+                    utente.getEmail(),
+                    utente.getAvatar(),
+                    utente.getCreatedAt()
+            );
         }
+    }
+
+    public List<Utente> getAllUsers() throws SQLException {
+        List<Utente> listaUtenti = new ArrayList<>();
+        // Query aggiornata per non prelevare la password_hash
+        String selectQuery = "SELECT id, username, nome, cognome, email, avatar, created_at FROM utenti";
+
+        // Usiamo try-with-resources per garantire la chiusura automatica dello Statement e del ResultSet
+        // La connessione la gestiamo manualmente tramite getConnection() e chiudi()
+        try (Statement stmt = getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(selectQuery)) {
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String username = rs.getString("username");
+                String nome = rs.getString("nome");
+                String cognome = rs.getString("cognome");
+                String email = rs.getString("email");
+                String avatar = rs.getString("avatar");
+                LocalDateTime createdAt = rs.getTimestamp("created_at").toLocalDateTime();
+
+                listaUtenti.add(new Utente(id, username, nome, cognome, email, avatar, createdAt));
+            }
+        }
+        return listaUtenti;
     }
 }

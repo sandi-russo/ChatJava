@@ -33,6 +33,19 @@
             <version>21</version>
         </dependency>
 
+        <!-- slf4J, lo uso per stampare messaggi di errore per la libreria di password4j -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.12</version> </dependency>
+
+        <!-- inserisco password4j -->
+        <dependency>
+            <groupId>com.password4j</groupId>
+            <artifactId>password4j</artifactId>
+            <version>1.8.3</version>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>

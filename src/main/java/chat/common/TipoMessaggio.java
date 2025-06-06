@@ -6,13 +6,13 @@ public enum TipoMessaggio {
     DOCUMENTO("2");
 
     private String suffisso;
-    private String tipo;
+    private final String tipo;
 
-    TipoMessaggio(String tipo){
+    TipoMessaggio(String tipo) {
         this.tipo = tipo;
     }
 
-    public String getTipo(){
+    public String getTipo() {
         return tipo;
     }
 
