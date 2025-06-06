@@ -15,6 +15,7 @@ public class Main extends Application {
         instance = this;
     }
 
+
     // uso questo per ottenere l'istanza corrente dell'applicazione
     public static Main getInstance() {
         return instance;
