@@ -1,24 +1,33 @@
 package chat.common;
 
-public class Utente {
-    private int id;
-    private String nome;
-    private String cognome;
-    private String email;
-    private String password;
-    private String avatar; // Percorso dell'immagine
+import java.time.LocalDateTime;
 
-    public Utente(int id, String nome, String cognome, String email, String password, String avatar) {
+
+public class Utente {
+    private final int id;
+    private String username;
+    private final String nome;
+    private final String cognome;
+    private final String email;
+    private final String avatar; // Percorso dell'immagine
+    private final LocalDateTime createdAt;
+
+    public Utente(int id, String username, String nome, String cognome, String email, String avatar, LocalDateTime createdAt) {
         this.id = id;
+        this.username = username;
         this.nome = nome;
         this.cognome = cognome;
         this.email = email;
-        this.password = password;
         this.avatar = avatar;
+        this.createdAt = createdAt;
     }
 
     public int getId() {
         return id;
+    }
+
+    public String getUsername() {
+        return username;
     }
 
     public String getNome() {
@@ -33,45 +42,21 @@ public class Utente {
         return email;
     }
 
-    public String getPassword() {
-        return password;
-    }
-
     public String getAvatar() {
         return avatar;
     }
 
-    public void printlnAllDatiUtente(){
-        System.out.println("id: " + this.id + " nome: " + this.nome + " cognome: " + this.cognome + " email: " + this.email + " password: " + this.password + " avatar: " + this.avatar);
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    public void setCognome(String cognome) {
-        this.cognome = cognome;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public void setAvatar(String avatar) {
-        this.avatar = avatar;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     @Override
     public String toString() {
-        return id + " - " + nome + " " + cognome + " - " + email;
+        return username + " (" + nome + " " + cognome + ")";
     }
 
 
