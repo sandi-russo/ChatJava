@@ -30,12 +30,13 @@ public class Main extends Application {
         stage.show();
     }
 
-    public void navigateTo(String fxmlFile) throws IOException {
+    public Object navigateTo(String fxmlFile) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("/fxml/" + fxmlFile));
         Scene scene = new Scene(fxmlLoader.load());
         primaryStage.setScene(scene);
         primaryStage.sizeToScene(); // faccio in modo che la finestra si adatti ai contenuti
         primaryStage.setTitle("Chat - " + fxmlFile.replace(".fxml", ""));
+        return fxmlLoader.getController(); // Ritorno il controller per poterci interagire
     }
 
     public static void main(String[] args) {

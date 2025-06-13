@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GestioneUtente {
 
@@ -65,7 +67,6 @@ public class GestioneUtente {
                                 resultSet.getString("nome"),
                                 resultSet.getString("cognome"),
                                 resultSet.getString("email"),
-                                // NOME COLONNA CORRETTO: 'avatar_path'
                                 resultSet.getString("avatar"),
                                 resultSet.getTimestamp("created_at").toLocalDateTime()
                         );
@@ -91,6 +92,35 @@ public class GestioneUtente {
             }
         }
         return false;
+    }
+
+
+    public List<Utente> cercaUtenti (String query) throws SQLException {
+        List<Utente> utentiTrovati = new ArrayList<Utente>();
+
+        // cerca utenti per username, nome o cognome (non so se sarebbe meglio farlo solo per Username)
+        String sql = "SELECT id, username, nome, cognome, email, avatar, created_at FROM utenti WHERE username LIKE ? OR nome LIKE ? OR cognome LIKE ?";
+
+        try (Connection conn = dbManager.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
+            String parametroRicerca = "%" + query + "%";
+            statement.setString(1, parametroRicerca);
+            statement.setString(2, parametroRicerca);
+            statement.setString(3, parametroRicerca);
+
+            ResultSet result = statement.executeQuery();
+            while (result.next()) {
+                utentiTrovati.add(new Utente(
+                        result.getInt("id_altro_utente"),
+                        result.getString("username"),
+                        result.getString("nome"),
+                        result.getString("cognome"),
+                        result.getString("email"),
+                        result.getString("avatar"),
+                        null // createdAt non ci interessa
+                ));
+            }
+        }
+        return utentiTrovati;
     }
 
     public static class UserRegistrationException extends Exception {

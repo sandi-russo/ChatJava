@@ -53,6 +53,11 @@ public class Login {
         try {
             Utente utenteLoggato = gestioneUtente.login(username, password);
             GestoreFeedbackUI.mostraSuccesso(feedbackLabel, "Login riuscito! Benvenuto " + utenteLoggato.getUsername());
+            ChatUI chatController = (ChatUI) Main.getInstance().navigateTo("ChatUI.fxml");
+
+            // chiamo il metodo sul controller per passargli i dati dell'utente
+            chatController.initData(utenteLoggato);
+
         } catch (GestioneUtente.LoginException e) {
             feedbackLabel.setText(e.getMessage());
         } catch (Exception e) {
