@@ -7,6 +7,7 @@ import chat.db.GestioneUtente;
 import chat.db.MySQLManager;
 import chat.utils.XMLConfigLoaderDB;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -25,6 +26,8 @@ public class Login {
     private PasswordField passwordField;
     @FXML
     private Label feedbackLabel;
+    @FXML
+    private Button btnLogin;
 
     private GestioneUtente gestioneUtente;
 
@@ -35,6 +38,9 @@ public class Login {
             MySQLManager dbManager = new MySQLManager(config.ip, config.porta, config.nomeDB, config.username, config.password);
             this.gestioneUtente = new GestioneUtente(dbManager);
             feedbackLabel.setText("");
+
+            // imposto il pulsante come predefinito per abilitare l'invio da tastiera
+            btnLogin.setDefaultButton(true);
         } catch (Exception e) {
             logger.error("Errore nell'inizializzazione", e);
             feedbackLabel.setText("Errore critico di configurazione.");
@@ -53,7 +59,7 @@ public class Login {
         try {
             Utente utenteLoggato = gestioneUtente.login(username, password);
             GestoreFeedbackUI.mostraSuccesso(feedbackLabel, "Login riuscito! Benvenuto " + utenteLoggato.getUsername());
-            ChatUI chatController = (ChatUI) Main.getInstance().navigateTo("ChatUI.fxml");
+            GeneralUI chatController = (GeneralUI) Main.getInstance().navigateTo("GeneralUI.fxml");
 
             // chiamo il metodo sul controller per passargli i dati dell'utente
             chatController.initData(utenteLoggato);

@@ -20,7 +20,7 @@
     </Label>
     <TextField fx:id="usernameField" promptText="Username" />
     <PasswordField fx:id="passwordField" promptText="Password" />
-    <Button onAction="#gestisciLogin" style="-fx-background-color: #2196F3; -fx-text-fill: white;" text="Login" />
+    <Button fx:id="btnLogin" onAction="#gestisciLogin" style="-fx-background-color: #2196F3; -fx-text-fill: white;" text="Login" />
     <Label fx:id="feedbackLabel" textFill="RED" />
     <Hyperlink onAction="#vaiARegistrazione" text="Non hai un account? Registrati" />
 </VBox>

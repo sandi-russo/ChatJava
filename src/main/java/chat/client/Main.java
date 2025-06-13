@@ -25,7 +25,7 @@ public class Main extends Application {
     public void start(Stage stage) throws IOException {
         this.primaryStage = stage;
         // all'avvio, carichiamo la schermata di login
-        navigateTo("Login.fxml");
+        navigateTo("login.fxml");
         stage.setTitle("Chat");
         stage.show();
     }
