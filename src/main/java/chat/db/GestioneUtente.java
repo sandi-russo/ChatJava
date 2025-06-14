@@ -33,6 +33,7 @@ public class GestioneUtente {
 
         String passwordHash = Password.hash(password).with(BCRYPT_FUNCTION).getResult();
 
+        // creo la query per inserire l'utente nella tabella utenti
         String sql = "INSERT INTO utenti (username, nome, cognome, email, password, avatar) VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = conn.prepareStatement(sql)) {
             statement.setString(1, username);
@@ -45,6 +46,7 @@ public class GestioneUtente {
         }
     }
 
+    // controllo se l'utente esiste e poi controllo la password
     public Utente login(String username, String passwordInChiaro) throws SQLException, LoginException {
         Connection con = dbManager.getConnection();
         String sql = "SELECT * FROM utenti WHERE username = ?";
@@ -53,7 +55,6 @@ public class GestioneUtente {
             statement.setString(1, username);
 
             try (ResultSet resultSet = statement.executeQuery()) {
-                // ERRORE LOGICO CORRETTO: se rs.next() è VERO, l'utente esiste e procediamo.
                 if (resultSet.next()) {
 
                     String hashSalvato = resultSet.getString("password");
@@ -72,9 +73,7 @@ public class GestioneUtente {
                         );
                     }
                 }
-
-                // se arriviamo qui, o l'utente non esiste o la password è errata.
-
+                // se sono qui l'utente non esiste o la password è errata.
                 throw new LoginException("Username o password non corretti.");
             }
         }
@@ -92,35 +91,6 @@ public class GestioneUtente {
             }
         }
         return false;
-    }
-
-
-    public List<Utente> cercaUtenti (String query) throws SQLException {
-        List<Utente> utentiTrovati = new ArrayList<Utente>();
-
-        // cerca utenti per username, nome o cognome (non so se sarebbe meglio farlo solo per Username)
-        String sql = "SELECT id, username, nome, cognome, email, avatar, created_at FROM utenti WHERE username LIKE ? OR nome LIKE ? OR cognome LIKE ?";
-
-        try (Connection conn = dbManager.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
-            String parametroRicerca = "%" + query + "%";
-            statement.setString(1, parametroRicerca);
-            statement.setString(2, parametroRicerca);
-            statement.setString(3, parametroRicerca);
-
-            ResultSet result = statement.executeQuery();
-            while (result.next()) {
-                utentiTrovati.add(new Utente(
-                        result.getInt("id_altro_utente"),
-                        result.getString("username"),
-                        result.getString("nome"),
-                        result.getString("cognome"),
-                        result.getString("email"),
-                        result.getString("avatar"),
-                        null // createdAt non ci interessa
-                ));
-            }
-        }
-        return utentiTrovati;
     }
 
     public static class UserRegistrationException extends Exception {

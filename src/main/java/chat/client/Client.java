@@ -1,99 +1,125 @@
 package chat.client;
 
+import chat.client.controller.ChatUI;
 import chat.common.Chat;
 import chat.common.Messaggio;
 import chat.common.Utente;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Client {
-    // L'id scelto ora si può togliere, mi serve solo per testare client diversi senza cambiare tutto manualmente ogni volta
-    Utente utenteClient;
-    Chat chatAttuale;
+    private static final Logger logger = LoggerFactory.getLogger(Client.class);
+    private Utente utenteClient;
+    private Chat chatAttuale;
+    private Socket socket;
+    private ObjectInputStream in;
+    private ObjectOutputStream out;
+    private boolean connesso = false;
+    private ChatUI chatUI;
 
-    public Client() throws IOException {
-        Scanner scannerIniziale = new Scanner(System.in);
+    // ExecutorService per gestire le operazioni asincrone
+    // Creo un pool con un singolo thread per la lettura dei messaggi
+    private ExecutorService threadPool = Executors.newSingleThreadExecutor();
 
+    public Client(Utente utente) {
+        this.utenteClient = utente;
         try {
-            System.out.println("Scegli un account tra 1, 2 e 3 (WIP: Questo esiste solo per testing)");
-            int idSceltoOra = scannerIniziale.nextInt();
-            System.out.println("Scegli l'id della chat in cui vuoi scrivere, se la chat non esiste ne verrà creata una nuova dal server (WIP: Questo esiste solo per testing)");
-            int chatSceltaOra = scannerIniziale.nextInt();
-
-            if(idSceltoOra == 1){
-                utenteClient = new Utente(1, "PAODOS", "ASDSAD", "persi", "123", "./antnrn.png", null);
-            } else if(idSceltoOra == 2){
-                utenteClient = new Utente(2, "Snndi", "Rususo", "fessi", "nonloso", "./sandnr.png", null);
-            } else {
-                throw new IllegalArgumentException("Hai inserito un numero diverso da 1 o 2 o 3");
-            }
-
-            chatAttuale = new Chat(chatSceltaOra);
-        } catch (Exception e) {
-            System.out.println("ERRORE: Non hai inserito un numero intero valido.");
-            System.exit(1);  // Termina il programma con codice di uscita 1
+            inizializzaConnessione();
+            avviaThreadLettura();
+        } catch (IOException e) {
+            logger.error("Errore nella connessione al server: {}", e.getMessage());
         }
+    }
 
-        Socket socket = new Socket("localhost", 5558);
+    private void inizializzaConnessione() throws IOException {
+        socket = new Socket("localhost", 5558);
+        out = new ObjectOutputStream(socket.getOutputStream());
+        in = new ObjectInputStream(socket.getInputStream());
 
-        ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-        ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-
-        // Lettore dei messaggi in arrivo (su un altro thread)
-        new Thread(() -> {
-            Chat nuovaChat;
-            while(true) {
-                try {
-                    // L'object letto va per forza castato a chat, altimenti non sembra andare
-                    while ((nuovaChat = (Chat) in.readObject()) != null) {
-                        System.out.println("Messaggi ricevuti: " + nuovaChat.getMessaggi().size());
-                        chatAttuale = nuovaChat;
-                        chatAttuale.stampaMessaggi();
-                    }
-                } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-
-        // Scrivi verso il server
-        String userInput;
-        // Manda come primo messaggio l'utente che si sta connettendo al server
+        // Invio dell'utente al server per identificazione
         out.writeObject(utenteClient);
+        connesso = true;
+        logger.info("Connesso al server come {}", utenteClient.getUsername());
+    }
 
-        out.writeObject(chatAttuale); // MANDO LA CHAT DA VISUALIZZARE
-        out.flush();
-        while (true) {
-            String str = null;
+    // il thread di lettura riceve i messaggi dal server
+    private void avviaThreadLettura() {
+        threadPool.submit(() -> {
+            Chat nuovaChat;
             try {
-                Scanner scanner = new Scanner(System.in); // crea lo scanner
+                while (connesso) {
+                    Object ricevuto = in.readObject();
+                    if (ricevuto instanceof Chat) {
+                        nuovaChat = (Chat) ricevuto;
+                        chatAttuale = nuovaChat;
 
-                System.out.print("Inserisci una parola: ");
-                str = scanner.nextLine(); // legge una singola frase
+                        // Aggiorna l'interfaccia grafica con i nuovi messaggi
+                        if (chatUI != null && chatUI.getIdConversazioneAttuale() == nuovaChat.getId()) {
+                            List<Messaggio> messaggi = new ArrayList<>(nuovaChat.getMessaggi().values());
+                            logger.info("Ricevuti {} messaggi da mostrare nella UI", messaggi.size());
+                            chatUI.aggiornaMessaggi(messaggi);
+                        }
 
-                if (str != null) {
-                    // Crea il messaggio:
-                    /*
-                    Il testo è str
-                    L'utente che lo sta mandando lo prende direttamente dal client con utenteClient.getId()
-                    La chat su cui vuole mandare il messaggio è chatAttuale.getId()
-                     */
-                    Messaggio msg = new Messaggio(str, utenteClient.getId(), chatAttuale.getId());
-                    if (msg.getTesto().equalsIgnoreCase("basta")) {
-                        break;
+                        logger.info("Ricevuta chat con ID {} contenente {} messaggi",
+                                nuovaChat.getId(), nuovaChat.getMessaggi().size());
                     }
-
-                    // Mando al server il messaggio che ho appena creato
-                    out.writeObject(msg);
-                    out.flush();
                 }
-            } catch (RuntimeException e) {
-                throw new RuntimeException(e);
+            } catch (IOException | ClassNotFoundException e) {
+                if (connesso) {
+                    logger.error("Errore nella ricezione dei messaggi: {}", e.getMessage(), e);
+                    disconnetti();
+                }
             }
-        }
+        });
+    }
 
-        socket.close();
+    public void inviaMessaggio(Messaggio messaggio) {
+        try {
+            if (connesso) {
+                out.writeObject(messaggio);
+                out.flush();
+                logger.info("Messaggio inviato al server: {}", messaggio.getTesto());
+            }
+        } catch (IOException e) {
+            logger.error("Errore nell'invio del messaggio: {}", e.getMessage());
+        }
+    }
+
+    // serve per aprire una chat specifica
+    public void attivaChat(int idChat) {
+        try {
+            chatAttuale = new Chat(idChat);
+            out.writeObject(chatAttuale);
+            out.flush();
+            logger.info("Attivata chat con ID: {}", idChat);
+        } catch (IOException e) {
+            logger.error("Errore nell'attivazione della chat: {}", e.getMessage());
+        }
+    }
+
+    // impostiamo il controller dell'interfaccia grafica
+    public void setChatUI(ChatUI chatUI) {
+        this.chatUI = chatUI;
+    }
+
+    // disconnetto il client dal server
+    public void disconnetti() {
+        try {
+            connesso = false;
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+            threadPool.shutdown();
+            logger.info("Disconnesso dal server");
+        } catch (IOException e) {
+            logger.error("Errore durante la disconnessione: {}", e.getMessage());
+        }
     }
 }

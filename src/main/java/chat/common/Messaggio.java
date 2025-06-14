@@ -15,7 +15,7 @@ public class Messaggio {
     private int id_chat_destinataria;
     private Instant ora;
 
-    // Quando i client mandano un messaggio non sanno quale id avrà quel messaggio nella chat, conviene creare
+    // Quando i client mandano un messaggio non sanno quale id avrà quel messaggio nella chat conviene creare
     // questo nuovo costruttore così i client usano questo, poi il server assegna al messaggio un id.
     public Messaggio(String testo,  int mittente, int chat_destinataria){
         this.testo = testo;
@@ -44,6 +44,7 @@ public class Messaggio {
         return ora;
     }
 
+    // la utilizzo per stampare l'ora nel messaggio nel formato ora:minuti:secondi
     public String getOraFormattata() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
                 .withZone(ZoneId.systemDefault());

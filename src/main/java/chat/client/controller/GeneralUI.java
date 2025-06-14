@@ -1,5 +1,6 @@
 package chat.client.controller;
 
+import chat.client.Client;
 import chat.client.GestoreFeedbackUI;
 import chat.common.Conversazione;
 import chat.common.Utente;
@@ -23,6 +24,7 @@ import java.sql.SQLException;
 
 public class GeneralUI {
     private static final Logger logger = LoggerFactory.getLogger(GeneralUI.class);
+
     @FXML
     private TextField campoRicercaChat;
     @FXML
@@ -35,15 +37,33 @@ public class GeneralUI {
     private Label labelUsername;
     @FXML
     private Label feedbackLabel;
-
+    @FXML
+    private ChatUI chatUIController;
+    // Etichetta da nascondere quando si seleziona una chat
+    @FXML
+    private Label etichettaSelezionaChatPerIniziare;
     private Utente utenteLoggato;
     private GestioneChat gestioneChat;
     private ObservableList<Conversazione> conversazioni = FXCollections.observableArrayList();
+    private Client clientChat;
 
+    @FXML
+    public void initialize() {
+        try {
+            // Configura la selezione della lista chat
+            listaChat.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue != null) {
+                    selezionaChat(newValue);
+                }
+            });
 
-    // metodo che richiamo in Login per passare i dati dell'utente
+        } catch (Exception e) {
+            logger.error("Errore nell'inizializzazione di GeneralUI: {}", e.getMessage(), e);
+        }
+    }
+
+    // metodo chiamato da Login per passare i dati dell'utente
     public void initData(Utente utente) {
-
         try {
             this.utenteLoggato = utente;
 
@@ -52,11 +72,23 @@ public class GeneralUI {
 
             this.gestioneChat = new GestioneChat(dbManager);
 
+            // Crea e inizializza il client di rete
+            this.clientChat = new Client(utenteLoggato);
+
+            // Verifica che chatUIController sia stato iniettato correttamente
+            if (chatUIController != null) {
+                chatUIController.setClientChat(clientChat);
+                clientChat.setChatUI(chatUIController);
+                logger.info("Controller ChatUI inizializzato con successo");
+            } else {
+                logger.error("Controller ChatUI non disponibile - verifica l'inclusione FXML");
+            }
+
             impostaInfoUtente();
             caricaConversazioni();
             impostaFiltroRicerca();
-        } catch (Exception e) {     // Il primo parametro è un messaggio descrittivo, il secondo è l'eccezione stessa.
-            logger.error("Errore critico durante l'inizializzazione del controller di registrazione", e);
+        } catch (Exception e) {
+            logger.error("Errore critico durante l'inizializzazione del controller: {}", e.getMessage(), e);
             GestoreFeedbackUI.mostraErrore(feedbackLabel, "Errore critico di configurazione.");
         }
     }
@@ -77,7 +109,6 @@ public class GeneralUI {
     private void caricaConversazioni() {
         try {
             conversazioni.setAll(gestioneChat.getConversazioniPerUtente(utenteLoggato.getId()));
-            System.out.println("Sono dopo il setAll");
 
             listaChat.setItems(conversazioni);
             logger.info("Caricate {} conversazioni per l'utente {}", conversazioni.size(), utenteLoggato.getUsername());
@@ -101,12 +132,40 @@ public class GeneralUI {
                 String testoMinuscolo = newValue.toLowerCase();
 
                 // Controlla se il nome utente dell'altro partecipante contiene il testo
-                return conversazione.getAltroUtente().getUsername().toLowerCase().contains(testoMinuscolo);// Non trovato
+                return conversazione.getAltroUtente().getUsername().toLowerCase().contains(testoMinuscolo);
             });
         });
 
         // Collega la lista filtrata alla ListView
         listaChat.setItems(conversazioniFiltrate);
     }
-}
 
+
+    // gestisco cosa fare con il "pannello" quando seleziono una chat
+    private void selezionaChat(Conversazione conversazione) {
+        if (conversazione != null && chatUIController != null) {
+            // Nascondi l'etichetta "Seleziona una chat per iniziare"
+            if (etichettaSelezionaChatPerIniziare != null) {
+                etichettaSelezionaChatPerIniziare.setVisible(false);
+            }
+
+            // Mostra la conversazione nella UI
+            chatUIController.mostraConversazione(conversazione, utenteLoggato);
+
+            // Attiva la chat sul client di rete
+            if (clientChat != null) {
+                clientChat.attivaChat(conversazione.getIdChat());
+            }
+
+            logger.info("Selezionata chat: {} (ID: {})",
+                    conversazione.getNomeVisualizzato(), conversazione.getIdChat());
+        }
+    }
+
+    // la uso quando chiudo l'app
+    public void onClose() {
+        if (clientChat != null) {
+            clientChat.disconnetti();
+        }
+    }
+}

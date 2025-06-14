@@ -9,6 +9,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+// utilizzata principalmente solo per il recupero delle conversazioni di un utente
 public class GestioneChat {
     private static final Logger logger = LoggerFactory.getLogger(GestioneChat.class);
     private final MySQLManager dbManager;
@@ -17,8 +18,7 @@ public class GestioneChat {
         this.dbManager = dbManager;
     }
 
-    // Recuper tutte le conversazioni di un utente
-
+    // Recupera tutte le conversazioni di un utente
     public List<Conversazione> getConversazioniPerUtente(int idUtenteLoggato) throws SQLException {
         List<Conversazione> conversazioni = new ArrayList<>();
 
@@ -48,7 +48,7 @@ public class GestioneChat {
 
                 conversazioni.add(new Conversazione(idChat, "Chat con " + altroUtente.getUsername(), altroUtente));
             }
-        }catch (SQLException e) {
+        } catch (SQLException e) {
             logger.error("Errore durante il recupero delle conversazioni per l'utente {}", idUtenteLoggato, e);
         }
         return conversazioni;

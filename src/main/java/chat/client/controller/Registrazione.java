@@ -41,8 +41,8 @@ public class Registrazione {
     private ImageView anteprimaAvatar;
     @FXML
     private Label nomeFileAvatarLabel;
-    private GestioneUtente gestioneUtente;
 
+    private GestioneUtente gestioneUtente;
     private File fileAvatarSelezionato; // lo utilizzo per salvare il file scelto dall'utente
 
 

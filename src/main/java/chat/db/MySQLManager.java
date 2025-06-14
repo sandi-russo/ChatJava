@@ -1,97 +1,58 @@
 package chat.db;
 
-import chat.common.HashMapUtenti;
 import chat.common.Utente;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MySQLManager {
-    // Campi per le credenziali del database
-    private final String ip;
-    private final int porta;
-    private final String nomeDB;
-    private final String username;
-    private final String password;
+public class MySQLManager extends ADatabase {
+    private static final Logger logger = LoggerFactory.getLogger(MySQLManager.class);
 
-    // Campi per la gestione dello stato della connessione
-    private boolean isConnected;
+    // variabile d’istanza per la connessione
     private Connection connection;
 
     public MySQLManager(String ip, int porta, String nomeDB, String username, String password) {
-        this.ip = ip;
-        this.porta = porta;
-        this.nomeDB = nomeDB;
-        this.username = username;
-        this.password = password;
-        this.isConnected = false; // Inizialmente non siamo connessi
-        this.connection = null;
+        super(
+                "jdbc:mysql://" + ip + ":" + porta + "/" + nomeDB +
+                        "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true",
+                username,
+                password
+        );
     }
 
-    public boolean isConnected() {
+    // implemento l'interfaccia di IDatabase
+    @Override
+    public boolean connetti() throws SQLException {
+        if (isConnesso()) {
+            return true; // siamo già connessi
+        }
         try {
-            /* isConnected è vero solo se l'oggetto connection, non è nullo e la connessione è ancora valida. */
-            return isConnected && connection != null && !connection.isClosed();
+            connection = DriverManager.getConnection(dbUrl, username, password);
+            logger.info("Connessione al database effettuata con successo.");
+            return true;
         } catch (SQLException e) {
-            isConnected = false;
-            return false;
+            logger.error("Errore durante la connessione al database: {}", e.getMessage());
+            throw e;
         }
     }
 
-    public void connettiti() throws SQLException {
-        if (!isConnected()) { // Usiamo il metodo isConnected() per un controllo più sicuro
-            String url = "jdbc:mysql://" + this.ip + ":" + this.porta + "/" + this.nomeDB +
-                    "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
-            this.connection = DriverManager.getConnection(url, this.username, this.password);
-            this.isConnected = true;
-            System.out.println("Connesso al database.");
-        }
-    }
-
-    public void chiudi() throws SQLException {
-        if (isConnected()) {
-            connection.close();
-            this.isConnected = false;
-            this.connection = null;
-            System.out.println("Connessione al database chiusa.");
-        }
-    }
-
+    // ottengo le informazioni generali sulla connessione
     public Connection getConnection() throws SQLException {
-        // Se non siamo connessi, tentiamo di connetterci.
-        if (!isConnected()) {
-            connettiti();
+        if (!isConnesso()) {
+            connetti();
         }
         return connection;
     }
 
-    public void popolaHashMapUtenti(HashMapUtenti hashMapUtenti) throws SQLException {
-        hashMapUtenti.svuota(); // Svuota la mappa prima di riempirla
-        List<Utente> tuttiGliUtenti = getAllUsers();
-
-        // Popola la mappa usando il suo metodo aggiungiUtente
-        for (Utente utente : tuttiGliUtenti) {
-            hashMapUtenti.aggiungiUtente(
-                    utente.getId(),
-                    utente.getUsername(),
-                    utente.getNome(),
-                    utente.getCognome(),
-                    utente.getEmail(),
-                    utente.getAvatar(),
-                    utente.getCreatedAt()
-            );
-        }
-    }
-
+    // lo utilizzo per restituire una lista di tutti gli utenti all'interno del DB
     public List<Utente> getAllUsers() throws SQLException {
         List<Utente> listaUtenti = new ArrayList<>();
-        // Query aggiornata per non prelevare la password_hash
         String selectQuery = "SELECT id, username, nome, cognome, email, avatar, created_at FROM utenti";
 
-        // Usiamo try-with-resources per garantire la chiusura automatica dello Statement e del ResultSet
-        // La connessione la gestiamo manualmente tramite getConnection() e chiudi()
         try (Statement stmt = getConnection().createStatement();
              ResultSet rs = stmt.executeQuery(selectQuery)) {
 

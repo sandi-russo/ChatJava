@@ -9,12 +9,11 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.List;
 
 public class StampaLista {
 
- private static final Logger logger = LoggerFactory.getLogger(StampaLista.class);
+    private static final Logger logger = LoggerFactory.getLogger(StampaLista.class);
 
     @FXML
     private Label labelTitolo;
