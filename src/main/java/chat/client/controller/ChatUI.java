@@ -2,6 +2,7 @@ package chat.client.controller;
 import chat.common.Conversazione;
 import chat.common.Messaggio;
 import chat.common.Utente;
+import chat.richieste.RichiestaMessaggio;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -53,6 +54,8 @@ public class ChatUI {
     public void initialize() {
         logger.info("Inizializzazione Interfaccia Grafica");
 
+        this.clientChat = GestisciClient.getInstance().getClientChat();
+
         // Nascondi il pannello all'inizio
         if (PannelloPrincipale != null) {
             PannelloPrincipale.setVisible(false);
@@ -69,6 +72,7 @@ public class ChatUI {
         if (CellaMessaggio != null) {
             CellaMessaggio.setOnAction(event -> inviaMessaggio());
         }
+
         if (ListaMessaggi != null) {
             configuraCellFactory();
         }
@@ -179,12 +183,25 @@ public class ChatUI {
                 aggiornaMessaggi(messaggiAttuali);
 
                 // Invia il messaggio tramite il client di rete
+                /*
                 if (clientChat != null) {
                     clientChat.inviaMessaggio(messaggio);
+
                     logger.info("Messaggio inviato: {}", messaggio.getTesto());
                 } else {
                     logger.error("Cliente di rete non inizializzato");
                 }
+                */
+
+                // Invece del messaggio, invio una RichiestaMessaggio
+                if (clientChat != null) {
+                    RichiestaMessaggio richiesta = new RichiestaMessaggio(messaggio);
+                    clientChat.inviaRichiestaAlServer(richiesta);
+                    logger.info("Messaggio inviato: {}", messaggio.getTesto());
+                } else {
+                    logger.error("Cliente di rete non inizializzato");
+                }
+
 
                 CellaMessaggio.clear(); // Pulisce il campo di input
             } catch (Exception e) {
@@ -192,6 +209,13 @@ public class ChatUI {
             }
         }
     }
+
+    // creaChat()
+    // -L'utente crea una chat, se sceglie di farla con una sola persona allora è privata con quell'utente. Altrimenti è di gruppo
+    // -
+
+    // aggiungiPersonaAChat()
+
 
     public void aggiornaMessaggi(List<Messaggio> messaggi) {
         if (ListaMessaggi == null) {

@@ -5,8 +5,6 @@ import chat.client.GestoreFeedbackUI;
 import chat.common.Conversazione;
 import chat.common.Utente;
 import chat.db.GestioneChat;
-import chat.db.MySQLManager;
-import chat.utils.XMLConfigLoaderDB;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -22,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.sql.SQLException;
 
-public class GeneralUI {
+public class GeneralUI extends GestisciClient {
     private static final Logger logger = LoggerFactory.getLogger(GeneralUI.class);
 
     @FXML
@@ -47,13 +45,19 @@ public class GeneralUI {
     private ObservableList<Conversazione> conversazioni = FXCollections.observableArrayList();
     private Client clientChat;
 
+
+public GeneralUI() {
+    super();
+}
+
     @FXML
     public void initialize() {
         try {
-            // Configura la selezione della lista chat
+            // Configura la selezione della lista chat.
+            // Aggiunge un listener su ListaChat, quando premi una chat essa viene selezionata e aperta con selezionaChat.
             listaChat.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue != null) {
-                    selezionaChat(newValue);
+                    selezionaChat(newValue);    // newValue è la Conversazione che hai selezionato nella grafica
                 }
             });
 
@@ -62,18 +66,29 @@ public class GeneralUI {
         }
     }
 
+
     // metodo chiamato da Login per passare i dati dell'utente
-    public void initData(Utente utente) {
+    public void initData (Utente utenteLoggato, Client clientChat) {
         try {
-            this.utenteLoggato = utente;
+            // L'utente viene dalla chiamata di Login, dopo che Login avrà già effettuato una richiesta per l'utente.
+            this.utenteLoggato = utenteLoggato;
+            // Non dovrebbe connettersi direttamente al db ma al server, è già connesso dal clienthandler
+            // GestioneChat non lo deve usare il client ma il server, quindi il client manda una richiesta in base a ciò
+            // che deve fare e il server usa queste funzioni esatte per usare da se GestioneChat connettendosi al db (per
+            // poi mandare la risposta al client)
+            // DA QUI
+         //   XMLConfigLoaderDB.DBConfig config = XMLConfigLoaderDB.caricaConfigurazione("server.config.xml");
+           // MySQLManager dbManager = new MySQLManager(config.ip, config.porta, config.nomeDB, config.username, config.password);
 
-            XMLConfigLoaderDB.DBConfig config = XMLConfigLoaderDB.caricaConfigurazione("server.config.xml");
-            MySQLManager dbManager = new MySQLManager(config.ip, config.porta, config.nomeDB, config.username, config.password);
-
-            this.gestioneChat = new GestioneChat(dbManager);
+            // this.gestioneChat = new GestioneChat(dbManager);
+            // A QUI, se ne deve occupare il server.
+            // Si usa una richiesta che chiede al server di dargli gestioneChat tramite GestioneChat(dbmanager) eseguito dal server
+            // this.gestioneChat = RichiestaGestioneChat(); // Al posto di quello attuale
 
             // Crea e inizializza il client di rete
-            this.clientChat = new Client(utenteLoggato);
+            this.clientChat = GestisciClient.getInstance().getClientChat();
+            // AGGIUNGERE:
+            // setControlloreGeneralUI();
 
             // Verifica che chatUIController sia stato iniettato correttamente
             if (chatUIController != null) {
@@ -83,7 +98,6 @@ public class GeneralUI {
             } else {
                 logger.error("Controller ChatUI non disponibile - verifica l'inclusione FXML");
             }
-
             impostaInfoUtente();
             caricaConversazioni();
             impostaFiltroRicerca();
@@ -106,9 +120,14 @@ public class GeneralUI {
         }
     }
 
+    // QUESTA VA CAMBIATA, BISOGNA CREARE UNA RICHIESTA AL SERVER CHE RITORNI AL CLIENT LE INFO
     private void caricaConversazioni() {
         try {
-            conversazioni.setAll(gestioneChat.getConversazioniPerUtente(utenteLoggato.getId()));
+            // Invia richiesta tramite stringa "Carica Conversazioni *idUtente*"
+            // Il server legge la stringa, la divide e fa esattamente quello che fa questa funzione adesso MA NEL SERVER.
+            // DEVE DIVENTARE:
+            // conversazioni.setAll(richiestaGetConversazioniPerUtente(gestioneChat, utenteLoggato.getId());
+            conversazioni.setAll(gestioneChat.getConversazioniPerUtente(utenteLoggato.getId())); // tutta la parte dentro la deve fare il server una volta che il client gli invia la richiesta (nello switch case)
 
             listaChat.setItems(conversazioni);
             logger.info("Caricate {} conversazioni per l'utente {}", conversazioni.size(), utenteLoggato.getUsername());
@@ -163,6 +182,8 @@ public class GeneralUI {
     }
 
     // la uso quando chiudo l'app
+    // non dovrebbe esserci perché il client non si connette direttamente con il database
+    // PROBABILMENTE DEPRECATA
     public void onClose() {
         if (clientChat != null) {
             clientChat.disconnetti();

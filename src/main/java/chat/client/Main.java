@@ -40,6 +40,14 @@ public class Main extends Application {
     }
 
     public static void main(String[] args) {
+//        try {
+//            Client client = new Client();
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+
+        // chiamo il metodo sul controller per passargli i dati dell'utente
+        // adesso, qui viene creato il CLIENT, parte da qui.
         launch();
     }
 }
