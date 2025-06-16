@@ -1,5 +1,4 @@
 package chat.common;
-import java.time.Instant;
 
 /*
     Creare una data, poi come renderla un timestamp nel db:
@@ -9,10 +8,18 @@ import java.time.Instant;
 
  */
 
-public class Messaggio {
+import java.time.Instant;
+
+import java.io.Serializable;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
+// Il messaggio deve implementare Serializable per poter mandare messaggi tramite socket
+public class Messaggio implements Serializable {
     private int id;
     private int id_mittente;
     private int id_chat_destinataria;
+    private String testo;
     private Instant ora;
 
     // Quando i client mandano un messaggio non sanno quale id avrà quel messaggio nella chat conviene creare

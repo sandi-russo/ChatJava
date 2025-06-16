@@ -4,6 +4,7 @@ package chat.common;
 public class Conversazione {
     private final int idChat;
     private final String nomeVisualizzato;
+    // altroUtente è di tipo Utente, darà problemi nel momento in cui va usato un gruppo.
     private final Utente altroUtente;
 
     public Conversazione(int idChat, String nomeVisualizzato, Utente altroUtente) {

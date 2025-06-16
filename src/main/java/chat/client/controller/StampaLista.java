@@ -34,6 +34,7 @@ public class StampaLista {
         feedbackLabel.setText("");
         try {
             // Carichiamo la configurazione e inizializziamo il DB Manager una sola volta
+            // qui manda una richiesta al server ed è il server usa il db manager
             XMLConfigLoaderDB.DBConfig config = XMLConfigLoaderDB.caricaConfigurazione("server.config.xml");
             this.dbManager = new MySQLManager(config.ip, config.porta, config.nomeDB, config.username, config.password);
 

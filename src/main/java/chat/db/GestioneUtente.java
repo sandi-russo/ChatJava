@@ -9,8 +9,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class GestioneUtente {
 
@@ -21,7 +19,7 @@ public class GestioneUtente {
         this.dbManager = dbManager;
     }
 
-    public void registraUtente(String username, String nome, String cognome, String email, String password, String avatar) throws UserRegistrationException, SQLException {
+    public Utente registraUtente(String username, String nome, String cognome, String email, String password, String avatar) throws UserRegistrationException, SQLException {
         Connection conn = dbManager.getConnection();
 
         if (userExists(conn, "username", username)) {
@@ -44,6 +42,7 @@ public class GestioneUtente {
             statement.setString(6, avatar);
             statement.executeUpdate();
         }
+        return null;
     }
 
     // controllo se l'utente esiste e poi controllo la password

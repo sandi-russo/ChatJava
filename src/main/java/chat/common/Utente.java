@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 
-public class Utente {
+public class Utente implements Serializable {
     private final int id;
     private String username;
     private final String nome;
@@ -60,5 +60,8 @@ public class Utente {
         return username + " (" + nome + " " + cognome + ")";
     }
 
+    public void printlnAllDatiUtente(){
+        System.out.println("id: " + this.id + " username:" + this.username + "nome: " + this.nome + " cognome: " + this.cognome + " email: " + this.email + " avatar: " + this.avatar);
+    }
 
 }
