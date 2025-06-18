@@ -1,7 +1,9 @@
 package chat.richieste;
 import chat.common.Messaggio;
 
-public class RichiestaMessaggio extends RichiestaGenerale {
+import java.io.Serializable;
+
+public class RichiestaMessaggio extends RichiestaGenerale implements Serializable {
     private Messaggio messaggio;
 
     public RichiestaMessaggio(Messaggio messaggio) {

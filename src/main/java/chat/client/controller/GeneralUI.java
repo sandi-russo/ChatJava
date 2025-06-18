@@ -151,9 +151,12 @@ public class GeneralUI extends GestisciClient {
 //            }
 
             List<Conversazione> listaRicevuta = listaConversazioni.getConversazioni();
+            //List<Chat> listaChatRicevuta = listaChat.getChats();
             logger.info("GeneralUI: Ricevute {} conversazioni dal server.", listaRicevuta.size());
 
             conversazioni.setAll(listaRicevuta); // tutta la parte dentro la deve fare il server una volta che il client gli invia la richiesta (nello switch case)
+            //chatUIController.caricaChat(listaChatRicevuta);
+
             logger.info("GeneralUI: ObservableList aggiornata con {} elementi.", conversazioni.size());
 
             listaChat.setItems(conversazioni);

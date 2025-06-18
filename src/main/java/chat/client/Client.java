@@ -4,6 +4,7 @@ import chat.client.controller.*;
 import chat.common.Chat;
 import chat.common.Messaggio;
 import chat.common.Utente;
+import chat.richieste.RichiestaChat;
 import chat.richieste.RichiestaConversazioni;
 import chat.richieste.RichiestaGenerale;
 import chat.richieste.RichiestaRegistrazioneUtente;
@@ -261,8 +262,9 @@ public class Client {
     // serve per aprire una chat specifica
     public void attivaChat(int idChat) {
         try {
-            chatAttuale = new Chat(idChat);
-            out.writeObject(chatAttuale);
+            RichiestaChat richiestaChat = new RichiestaChat(idChat);
+            //chatAttuale = new Chat(idChat);
+            out.writeObject(richiestaChat);
             out.flush();
             logger.info("Attivata chat con ID: {}", idChat);
         } catch (IOException e) {

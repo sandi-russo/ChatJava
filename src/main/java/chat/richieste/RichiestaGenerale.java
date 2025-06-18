@@ -5,8 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
-public class RichiestaGenerale implements IRichiesta {
+public class RichiestaGenerale implements IRichiesta, Serializable {
     public final TipoRichiesta tipo;
 
     private static final Logger logger = LoggerFactory.getLogger(RichiestaGenerale.class);

@@ -1,7 +1,9 @@
 package chat.client.controller;
+import chat.common.Chat;
 import chat.common.Conversazione;
 import chat.common.Messaggio;
 import chat.common.Utente;
+import chat.richieste.RichiestaConversazioni;
 import chat.richieste.RichiestaMessaggio;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -25,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -139,6 +142,14 @@ public class ChatUI {
         this.utenteLoggato = utente;
 
         Platform.runLater(() -> {
+            Messaggio messaggioVuoto = new Messaggio(utenteLoggato.getId(), conversazione.getIdChat());
+            RichiestaMessaggio richiestaMessaggioVuota = new RichiestaMessaggio(messaggioVuoto);
+            try {
+                clientChat.inviaRichiestaAlServer(richiestaMessaggioVuota);
+            } catch (IOException | ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+
             // Aggiorna l'interfaccia con i dati della conversazione
             if (chatNome != null) {
                 chatNome.setText(conversazione.getNomeVisualizzato());
@@ -239,6 +250,23 @@ public class ChatUI {
             }
         });
     }
+
+    // Per usare questa funzione dobbiamo prima fare la query e collegare tutto ciò che parte
+    // da: riga 388 del Clienthanlder. Ci sono diversi commenti di cose che vanno implementate, tra cui
+    // la query.
+    // Inoltre forse va anche messo qualcosa nel Client per farlo funzionare.
+    public void caricaChat(List<Chat> chats) {
+        messaggiAttuali.clear(); // pulisci i messaggi attuali prima di caricare nuovi
+
+        for (Chat chat : chats) {
+            for (Messaggio messaggio : chat.getMessaggi().values()) {
+                messaggiAttuali.add(messaggio);
+            }
+        }
+
+        aggiornaMessaggi(messaggiAttuali);
+    }
+
 
     public void setClientChat(chat.client.Client clientChat) {
         this.clientChat = clientChat;

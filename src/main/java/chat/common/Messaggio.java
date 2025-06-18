@@ -31,6 +31,13 @@ public class Messaggio implements Serializable {
         this.ora = Instant.now();
     }
 
+    // In questo costruttore String = null. Quindi può essere usato per mandare un messaggio vuoto.
+    public Messaggio(int mittente, int chat_destinataria){
+        this.id_mittente = mittente;
+        this.id_chat_destinataria = chat_destinataria;
+        this.ora = Instant.now();
+    }
+
     public int getId() {
         return id;
     }

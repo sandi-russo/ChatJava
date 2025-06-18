@@ -3,15 +3,17 @@ package chat.richieste;
 import chat.common.Chat;
 import chat.common.Utente;
 
-public class RichiestaChat extends RichiestaGenerale{
-    private Chat chat;
+import java.io.Serializable;
 
-    public RichiestaChat(Chat chat) {
+public class RichiestaChat extends RichiestaGenerale implements Serializable {
+    private int idChat;
+
+    public RichiestaChat(int idChat) {
         super(TipoRichiesta.richiestaChat);
-        this.chat = chat;
+        this.idChat = idChat;
     }
 
-    public Chat getChat(){
-        return chat;
+    public int getIdChat(){
+        return idChat;
     }
 }

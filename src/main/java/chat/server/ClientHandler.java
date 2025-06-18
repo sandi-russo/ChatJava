@@ -59,6 +59,11 @@ public class ClientHandler implements Runnable {
 
         this.config = XMLConfigLoaderDB.caricaConfigurazione("server.config.xml");
         this.dbManager = new MySQLManager(config.ip, config.porta, config.nomeDB, config.username, config.password);
+        // Qui, il server dovrebbe caricare TUTTE le chat dal db. In questo modo se le carica una volta
+        // sola e non c'è bisogno di caricarle ogni volta che un client preme qualcosa nell'interfaccia.
+        // gestioneChat.caricaTutteLeChat();  // Non so se usare gestioneChat
+
+        // ^Lo faccio da un'altra parte, lo tengo come appunto
     }
 
     public void run() {
@@ -224,10 +229,11 @@ public class ClientHandler implements Runnable {
 
                 // POI IL CLIENT INVIA LA CHAT, LA LEGGIAMO (non sappiamo farci gli affari nostri)
                 RichiestaChat richiestaChat = (RichiestaChat) richiesta;
-                Chat chatIniziale = richiestaChat.getChat();
+                //Chat chatIniziale = richiestaChat.getChat();
 
                 // ABBIAMO LETTO L'ID, LO DOBBIAMO SALVARE
-                this.activeChatID = chatIniziale.getId();  // ORA IL CLIENTHANDLER SA QUAL È L'UTENTE "ATTIVO"
+                //this.activeChatID = chatIniziale.getId();  // ORA IL CLIENTHANDLER SA QUAL È L'UTENTE "ATTIVO"
+                this.activeChatID = richiestaChat.getIdChat();
                 logger.info("Utente {}: {} connesso. Chat iniziale attiva {}", idUtente, utenteConnesso.getId(), activeChatID);
 
                 System.out.printf("Utente %d: %s connesso. Chat iniziale attiva %d\n", idUtente, utenteConnesso.getId(), activeChatID);
@@ -240,7 +246,7 @@ public class ClientHandler implements Runnable {
                 //Messaggio nuovoMessaggio = (Messaggio) oggettoRicevuto;
 
                 // SE RICEVO UN NUOVO MESSAGGIO CONTROLLO SE QUESTA CHAT ESISTE, IN CASO NEGATIVO, LA CREO
-                // USEREMO LA FUNZIONE comuteIfAbsent perchè è nettamente più sicuro e "thread-safe"
+                // USEREMO LA FUNZIONE computeIfAbsent perchè è nettamente più sicuro e "thread-safe"
                 chats.computeIfAbsent(nuovoMessaggio.getId_chat_destinataria(), chatID -> {
                     System.out.printf("La chatID ", chatID + " non esiste. La sto creando.");
                     return creaChatPerUtente(utenteConnesso, chatID);
@@ -259,9 +265,12 @@ public class ClientHandler implements Runnable {
                     chatDaModificare.aggiungiUtente(utenteConnesso);
                 }
 
-                // IL MESSAGGIO CHE È APPENA ARRIVATO VIENE AGGIUNTO ALLA CHAT
-                chatDaModificare.aggiungiMessaggio(nuovoMessaggio);
-
+                // Se il messaggio non è vuoto, lo aggiungo alla chat.
+                // Questo è importante perché se il messaggio è vuoto allora il server restituisce comunque la chat
+                // al client, così quando il client preme su una chat il server gli manda tutta la chat che già ha.
+                if(nuovoMessaggio.getTesto() != null) {
+                    chatDaModificare.aggiungiMessaggio(nuovoMessaggio);
+                }
                 // ADESSO PENSIAMO ALL'INOLTRO
                 // IL SERVER SI SCORRE TUTTI LA LISTA DI TUTTI GLI UTENTI CHE SONO CONNESSI E CONTROLLA A CHI MANDARE IL MESSAGGIO
 
@@ -274,10 +283,27 @@ public class ClientHandler implements Runnable {
                         //
                     }
 
-                    break;
+                    //break;
                 }
+                break;
             case richiestaConversazioni:
-                gestisciConversazioni((RichiestaConversazioni) richiesta);
+                try {
+                    RichiestaConversazioni richiestaConversazioni = (RichiestaConversazioni) richiesta;
+                    if (richiesta instanceof RichiestaConversazioni) {
+
+                        //gestisciConversazioni((RichiestaConversazioni) richiesta);
+                        gestisciConversazioni(richiestaConversazioni);
+
+                        // ora sei al sicuro
+                    }
+                } catch (ClassCastException e){
+                    // Qui potresti loggare, lanciare eccezione o gestire il caso
+                    String tipo = richiesta.getClass().getSimpleName();
+                    throw new ClassCastException("Oggetto ricevuto non è una RichiestaConversazioni. Ma è di tipo: " + tipo);
+                }
+
+                //RichiestaChat richiestaChat = (RichiestaChat) richiesta;
+
                 break;
 
             default:
@@ -359,11 +385,13 @@ public class ClientHandler implements Runnable {
 
             logger.info("ID utente " + idUtente);
             ObservableList<Conversazione> conversazioniObservable = gestioneChat.getConversazioniPerUtente(idUtenteRichiedente);
-
+            // chatObservable = gestioneChat.getChatPerUtente(idUtenteRichiedente);
             logger.info("ClientHandler: Trovate {} conversazioni dal database per l'utente ID {}", conversazioniObservable.size(), idUtente);
 
             // converto l'observable in un arraylist
             List<Conversazione> conversazioniList = new ArrayList<>(conversazioniObservable);
+            //List<Conversazione> chatList = new ArrayList<>(chatObservable);
+
             logger.info("ClientHandler: Trovate {} conversazioni dal database per l'utente ID {}",
                     conversazioniList.size(), idUtenteRichiedente);
             logger.info("ClientHandler: Lista serializzabile creata con {} elementi.", conversazioniList.size());
@@ -371,6 +399,7 @@ public class ClientHandler implements Runnable {
             // inviaRisposta(conversazioni);
             // Forse queste richieste è meglio cambiarle in "risposte" per non confondere tutto...
             RichiestaConversazioni risposta = new RichiestaConversazioni(conversazioniList);
+            //RichiestaConversazioni risposta = new RichiestaConversazioni(conversazioniList, chatList);
             inviaRisposta(risposta);
         } catch (SQLException e) {
             inviaRisposta("Errore nel ritorno delle conversazioni");
