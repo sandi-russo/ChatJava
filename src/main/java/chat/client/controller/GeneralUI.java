@@ -5,6 +5,8 @@ import chat.client.GestoreFeedbackUI;
 import chat.common.Conversazione;
 import chat.common.Utente;
 import chat.db.GestioneChat;
+import chat.richieste.RichiestaConversazioni;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -90,8 +92,6 @@ public class GeneralUI extends GestisciClient {
             // Si usa una richiesta che chiede al server di dargli gestioneChat tramite GestioneChat(dbmanager) eseguito dal server
             // this.gestioneChat = RichiestaGestioneChat(); // Al posto di quello attuale
 
-            // Crea e inizializza il client di rete
-            this.clientChat = GestisciClient.getInstance().getClientChat();
             // AGGIUNGERE:
             // setControlloreGeneralUI();
 

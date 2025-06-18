@@ -1,12 +1,10 @@
 package chat.client;
 
-import chat.client.controller.ChatUI;
-import chat.client.controller.GestisciClient;
-import chat.client.controller.Registrazione;
+import chat.client.controller.*;
 import chat.common.Chat;
 import chat.common.Messaggio;
 import chat.common.Utente;
-import chat.client.controller.Login;
+import chat.richieste.RichiestaConversazioni;
 import chat.richieste.RichiestaGenerale;
 import chat.richieste.RichiestaRegistrazioneUtente;
 import org.slf4j.Logger;
@@ -39,6 +37,7 @@ public class Client {
     //faccio riferimento al controller di Login
     private Login controlloreLogin;
     private Registrazione controlloreRegistrazione;
+    private GeneralUI controlloreGeneralUI;
 
     public Client(GestisciClient gestisciClient) {
         //this.utenteClient = utente;
@@ -130,8 +129,10 @@ public class Client {
                         case String messaggioErrore -> {
                             if (controlloreLogin != null) {
                                 controlloreLogin.gestisciLoginFallito(messaggioErrore);
-                            } else {
+                            } else if(controlloreRegistrazione != null) {
                                 controlloreRegistrazione.gestisciRegistrazioneFallita(messaggioErrore);
+                            } else if(controlloreGeneralUI != null){
+                                controlloreGeneralUI.gestisciConversazioneFallito(messaggioErrore);
                             }
                         }
                         case RichiestaRegistrazioneUtente ignored -> {
@@ -149,6 +150,11 @@ public class Client {
 
                             logger.info("Ricevuta chat con ID {} contenente {} messaggi",
                                     chatAttuale.getId(), chatAttuale.getMessaggi().size());
+                        }
+                        case RichiestaConversazioni risposta -> {
+                            if (controlloreGeneralUI != null) {
+                                controlloreGeneralUI.gestisciConversazioneConSuccesso(risposta);
+                            }
                         }
                         default -> {
                             System.out.println("Client: l'oggetto ricevuto non è fra quelli che io gestisco");
@@ -223,6 +229,10 @@ public class Client {
     // serve per richiaamre il controller di registrazione dopo che l'utente è stato salvato nel db
     public void setControlloreRegistrazione(Registrazione controller) {
         this.controlloreRegistrazione = controller;
+    }
+
+    public void setControlloreGeneralUI(GeneralUI controller) {
+        this.controlloreGeneralUI = controller;
     }
 
     public void inviaMessaggio(Messaggio messaggio) {

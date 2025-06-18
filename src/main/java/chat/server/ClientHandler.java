@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import chat.db.GestioneUtente;
 import chat.utils.XMLConfigLoaderDB;
+import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -273,10 +274,10 @@ public class ClientHandler implements Runnable {
                         //
                     }
 
-
                     break;
                 }
             case richiestaConversazioni:
+                gestisciConversazioni((RichiestaConversazioni) richiesta);
                 break;
 
             default:

@@ -2,6 +2,8 @@ package chat.db;
 
 import chat.common.Conversazione;
 import chat.common.Utente;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,8 +21,9 @@ public class GestioneChat {
     }
 
     // Recupera tutte le conversazioni di un utente
-    public List<Conversazione> getConversazioniPerUtente(int idUtenteLoggato) throws SQLException {
-        List<Conversazione> conversazioni = new ArrayList<>();
+    public ObservableList<Conversazione> getConversazioniPerUtente(int idUtenteLoggato) throws SQLException {
+        //ObservableList<Conversazione> conversazioni = new ObservableList<Conversazione>();
+        ObservableList<Conversazione> conversazioni = FXCollections.observableArrayList();
 
         // query per trovare tutte le chat dell'utente e per ognuna, i dati dell'altro partecipante
         String sql = """
