@@ -1,9 +1,9 @@
 package chat.client.controller;
+
 import chat.common.Chat;
 import chat.common.Conversazione;
 import chat.common.Messaggio;
 import chat.common.Utente;
-import chat.richieste.RichiestaConversazioni;
 import chat.richieste.RichiestaMessaggio;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -102,7 +102,10 @@ public class ChatUI {
                 boolean messaggioMio = utenteLoggato != null && messaggio.getId_mittente() == utenteLoggato.getId();
 
                 HBox intestazione = new HBox(10);
+                //String nomeMittente = clientChat.getNomeMittente(messaggio, clientChat.getUtentiConosciuti(), messaggio.getId_mittente());
+                //String nomeMittente = clientChat.getNomeMittente(messaggio, clientChat.getUtentiConosciuti(), utenteLoggato.getId());
                 String nomeMittente = messaggioMio ? "Tu" : "Utente " + messaggio.getId_mittente();
+                System.out.println("Nome mittente: " + nomeMittente);
                 Label mittente = new Label(nomeMittente);
                 mittente.setFont(Font.font("System", FontWeight.BOLD, 12));
 
@@ -233,7 +236,7 @@ public class ChatUI {
             logger.error("Lista messaggi non disponibile");
             return;
         }
-    // utilizzo runLater per mettere l'attività in coda ed eseguirla appena possibile
+        // utilizzo runLater per mettere l'attività in coda ed eseguirla appena possibile
         Platform.runLater(() -> {
             try {
                 ListaMessaggi.getItems().clear();
