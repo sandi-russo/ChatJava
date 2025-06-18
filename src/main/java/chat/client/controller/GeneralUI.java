@@ -17,8 +17,10 @@ import javafx.scene.image.ImageView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 import java.io.File;
-import java.sql.SQLException;
+import java.io.IOException;
 
 public class GeneralUI extends GestisciClient {
     private static final Logger logger = LoggerFactory.getLogger(GeneralUI.class);
@@ -41,14 +43,14 @@ public class GeneralUI extends GestisciClient {
     @FXML
     private Label etichettaSelezionaChatPerIniziare;
     private Utente utenteLoggato;
-    private GestioneChat gestioneChat;
     private ObservableList<Conversazione> conversazioni = FXCollections.observableArrayList();
     private Client clientChat;
 
 
-public GeneralUI() {
-    super();
-}
+    public GeneralUI() {
+        super();
+    }
+
 
     @FXML
     public void initialize() {
@@ -60,7 +62,8 @@ public GeneralUI() {
                     selezionaChat(newValue);    // newValue è la Conversazione che hai selezionato nella grafica
                 }
             });
-
+            //this.clientChat = GestisciClient.getInstance().getClientChat();
+            //this.clientChat.setControlloreGeneralUI(this);
         } catch (Exception e) {
             logger.error("Errore nell'inizializzazione di GeneralUI: {}", e.getMessage(), e);
         }
@@ -68,17 +71,19 @@ public GeneralUI() {
 
 
     // metodo chiamato da Login per passare i dati dell'utente
-    public void initData (Utente utenteLoggato, Client clientChat) {
+    public void initData(Utente utenteLoggato, Client clientChat) {
         try {
             // L'utente viene dalla chiamata di Login, dopo che Login avrà già effettuato una richiesta per l'utente.
             this.utenteLoggato = utenteLoggato;
+            this.clientChat = clientChat;
+            this.clientChat.setControlloreGeneralUI(this);
             // Non dovrebbe connettersi direttamente al db ma al server, è già connesso dal clienthandler
             // GestioneChat non lo deve usare il client ma il server, quindi il client manda una richiesta in base a ciò
             // che deve fare e il server usa queste funzioni esatte per usare da se GestioneChat connettendosi al db (per
             // poi mandare la risposta al client)
             // DA QUI
-         //   XMLConfigLoaderDB.DBConfig config = XMLConfigLoaderDB.caricaConfigurazione("server.config.xml");
-           // MySQLManager dbManager = new MySQLManager(config.ip, config.porta, config.nomeDB, config.username, config.password);
+            //   XMLConfigLoaderDB.DBConfig config = XMLConfigLoaderDB.caricaConfigurazione("server.config.xml");
+            // MySQLManager dbManager = new MySQLManager(config.ip, config.porta, config.nomeDB, config.username, config.password);
 
             // this.gestioneChat = new GestioneChat(dbManager);
             // A QUI, se ne deve occupare il server.
@@ -127,15 +132,43 @@ public GeneralUI() {
             // Il server legge la stringa, la divide e fa esattamente quello che fa questa funzione adesso MA NEL SERVER.
             // DEVE DIVENTARE:
             // conversazioni.setAll(richiestaGetConversazioniPerUtente(gestioneChat, utenteLoggato.getId());
-            conversazioni.setAll(gestioneChat.getConversazioniPerUtente(utenteLoggato.getId())); // tutta la parte dentro la deve fare il server una volta che il client gli invia la richiesta (nello switch case)
+            // richiesta: RichiestaConversazioni()
+            RichiestaConversazioni richiesta = new RichiestaConversazioni(utenteLoggato.getId());
+            clientChat.inviaRichiestaAlServer(richiesta);
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void gestisciConversazioneConSuccesso(RichiestaConversazioni listaConversazioni) {
+        // metto il codice che c'era sopra, non ho modificato praticamente nulla
+
+        Platform.runLater(() -> {
+//            try {
+//                conversazioni.setAll(gestioneChat.getConversazioniPerUtente(utenteLoggato.getId())); // tutta la parte dentro la deve fare il server una volta che il client gli invia la richiesta (nello switch case)
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+
+            List<Conversazione> listaRicevuta = listaConversazioni.getConversazioni();
+            logger.info("GeneralUI: Ricevute {} conversazioni dal server.", listaRicevuta.size());
+
+            conversazioni.setAll(listaRicevuta); // tutta la parte dentro la deve fare il server una volta che il client gli invia la richiesta (nello switch case)
+            logger.info("GeneralUI: ObservableList aggiornata con {} elementi.", conversazioni.size());
 
             listaChat.setItems(conversazioni);
             logger.info("Caricate {} conversazioni per l'utente {}", conversazioni.size(), utenteLoggato.getUsername());
-
-        } catch (SQLException e) {
-            logger.error("Impossibile caricare le conversazioni per l'utente {}", utenteLoggato.getUsername(), e);
-        }
+        });
     }
+
+
+    // qui creo la versione per un login fallito, essendo fallito, passerò l'oggetto String con un messaggio e non l'oggetto Utente
+    public void gestisciConversazioneFallito(String messsaggioErrore) {
+        Platform.runLater(() -> {
+            GestoreFeedbackUI.mostraErrore(feedbackLabel, messsaggioErrore);
+        });
+    }
+
 
     private void impostaFiltroRicerca() {
         // Uso una FilteredList per la ricerca in tempo reale

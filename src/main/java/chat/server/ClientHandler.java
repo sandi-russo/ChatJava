@@ -1,10 +1,7 @@
 package chat.server;
 
 import chat.client.controller.Registrazione;
-import chat.common.Chat;
-import chat.common.HashMapUtenti;
-import chat.common.Messaggio;
-import chat.common.Utente;
+import chat.common.*;
 import chat.db.MySQLManager;
 import chat.richieste.*;
 
@@ -16,9 +13,10 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import chat.db.GestioneChat;
 import java.sql.SQLException;
-import java.sql.SQLOutput;
+import java.util.ArrayList;
+
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -169,6 +167,8 @@ public class ClientHandler implements Runnable {
             System.out.println("Il client " + idUtente + " si è disconnesso o si è verificato un errore " + e.getMessage());
             // IN CASO DI PROBLEMI O DISCONNESSIONE, RIMUOVO IL CLIENT DALLA LISTA
             clientHandlers.remove(this);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -204,7 +204,7 @@ public class ClientHandler implements Runnable {
 
     // permette di avere l'accesso concorrente all'oggetto richiesta, in questo modo, la funzione, verrà eseguita
     // da un thread alla volta
-    public synchronized void elaboraRichiesta(IRichiesta richiesta) {
+    public synchronized void elaboraRichiesta(IRichiesta richiesta) throws SQLException {
         System.out.println("Tipo richiesta: " + richiesta.getTipo());
         switch (richiesta.getTipo()) {
             case richiestaLogin:
@@ -226,7 +226,9 @@ public class ClientHandler implements Runnable {
                 Chat chatIniziale = richiestaChat.getChat();
 
                 // ABBIAMO LETTO L'ID, LO DOBBIAMO SALVARE
-                this.activeChatID = chatIniziale.getId(); // ORA IL CLIENTHANDLER SA QUAL È L'UTENTE "ATTIVO"
+                this.activeChatID = chatIniziale.getId();  // ORA IL CLIENTHANDLER SA QUAL È L'UTENTE "ATTIVO"
+                logger.info("Utente {}: {} connesso. Chat iniziale attiva {}", idUtente, utenteConnesso.getId(), activeChatID);
+
                 System.out.printf("Utente %d: %s connesso. Chat iniziale attiva %d\n", idUtente, utenteConnesso.getId(), activeChatID);
                 break;
             case richiestaMessaggio:
@@ -342,6 +344,35 @@ public class ClientHandler implements Runnable {
             inviaRisposta(risposta);
 
         } catch (SQLException | GestioneUtente.UserRegistrationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    private void gestisciConversazioni (RichiestaConversazioni richiesta) {
+        GestioneChat gestioneChat = new GestioneChat(dbManager);
+        int idUtenteRichiedente = richiesta.getIdUtenteRichiedente(); // Ottieni l'ID dalla richiesta
+        logger.info("ClientHandler: Richiesta conversazioni per l'utente ID: {}", idUtenteRichiedente); // Logga l'ID
+
+        try {
+
+            logger.info("ID utente " + idUtente);
+            ObservableList<Conversazione> conversazioniObservable = gestioneChat.getConversazioniPerUtente(idUtenteRichiedente);
+
+            logger.info("ClientHandler: Trovate {} conversazioni dal database per l'utente ID {}", conversazioniObservable.size(), idUtente);
+
+            // converto l'observable in un arraylist
+            List<Conversazione> conversazioniList = new ArrayList<>(conversazioniObservable);
+            logger.info("ClientHandler: Trovate {} conversazioni dal database per l'utente ID {}",
+                    conversazioniList.size(), idUtenteRichiedente);
+            logger.info("ClientHandler: Lista serializzabile creata con {} elementi.", conversazioniList.size());
+
+            // inviaRisposta(conversazioni);
+            // Forse queste richieste è meglio cambiarle in "risposte" per non confondere tutto...
+            RichiestaConversazioni risposta = new RichiestaConversazioni(conversazioniList);
+            inviaRisposta(risposta);
+        } catch (SQLException e) {
+            inviaRisposta("Errore nel ritorno delle conversazioni");
             throw new RuntimeException(e);
         }
     }

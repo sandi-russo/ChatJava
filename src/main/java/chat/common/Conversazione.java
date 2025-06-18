@@ -1,7 +1,9 @@
 package chat.common;
 
+import java.io.Serializable;
+
 // Questa classe la utilizzo solamente per contenere i dati di una singola conversazione da mostrare nella lista
-public class Conversazione {
+public class Conversazione implements Serializable {
     private final int idChat;
     private final String nomeVisualizzato;
     // altroUtente è di tipo Utente, darà problemi nel momento in cui va usato un gruppo.

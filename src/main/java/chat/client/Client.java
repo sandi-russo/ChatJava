@@ -8,10 +8,10 @@ import chat.common.Messaggio;
 import chat.common.Utente;
 import chat.client.controller.Login;
 import chat.richieste.RichiestaGenerale;
-import chat.richieste.RichiestaLogin;
 import chat.richieste.RichiestaRegistrazioneUtente;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javafx.collections.FXCollections;
 
 import java.io.*;
 import java.net.*;
