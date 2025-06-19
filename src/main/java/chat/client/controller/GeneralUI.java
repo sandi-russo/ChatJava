@@ -4,7 +4,6 @@ import chat.client.Client;
 import chat.client.GestoreFeedbackUI;
 import chat.common.Conversazione;
 import chat.common.Utente;
-import chat.db.GestioneChat;
 import chat.richieste.RichiestaConversazioni;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -140,7 +139,7 @@ public class GeneralUI extends GestisciClient {
         }
     }
 
-    public void gestisciConversazioneConSuccesso(RichiestaConversazioni listaConversazioni) {
+    public void gestisciConversazioneConSuccesso(RichiestaConversazioni risposta) {
         // metto il codice che c'era sopra, non ho modificato praticamente nulla
 
         Platform.runLater(() -> {
@@ -150,16 +149,28 @@ public class GeneralUI extends GestisciClient {
 //                throw new RuntimeException(e);
 //            }
 
-            List<Conversazione> listaRicevuta = listaConversazioni.getConversazioni();
+            List<Conversazione> listaRicevuta = risposta.getConversazioni();
+
+            if (listaRicevuta == null || listaRicevuta.isEmpty()) {
+                logger.warn("GeneralUI: Ricevuta una lista di conversazioni vuota o nulla dal server.");
+                return;
+            }
+
+            if (clientChat != null) {
+                clientChat.popolaUtentiDaConversazioni(listaRicevuta);
+            }
+
             //List<Chat> listaChatRicevuta = listaChat.getChats();
             logger.info("GeneralUI: Ricevute {} conversazioni dal server.", listaRicevuta.size());
 
             conversazioni.setAll(listaRicevuta); // tutta la parte dentro la deve fare il server una volta che il client gli invia la richiesta (nello switch case)
             //chatUIController.caricaChat(listaChatRicevuta);
 
+            impostaFiltroRicerca();
+
             logger.info("GeneralUI: ObservableList aggiornata con {} elementi.", conversazioni.size());
 
-            listaChat.setItems(conversazioni);
+           // listaChat.setItems(conversazioni);
             logger.info("Caricate {} conversazioni per l'utente {}", conversazioni.size(), utenteLoggato.getUsername());
         });
     }
@@ -174,10 +185,20 @@ public class GeneralUI extends GestisciClient {
 
 
     private void impostaFiltroRicerca() {
-        // Uso una FilteredList per la ricerca in tempo reale
+        // Crea una FilteredList da avvolgere attorno alla ObservableList originale
+
+        logger.debug("Inizio impostazione filtro ricerca con {} conversazioni", conversazioni.size());
         FilteredList<Conversazione> conversazioniFiltrate = new FilteredList<>(conversazioni, p -> true);
 
+        // Imposta la FilteredList come modello per la ListView
+        listaChat.setItems(conversazioniFiltrate);
+
+        logger.debug("FilteredList creata con {} elementi", conversazioniFiltrate.size());
+
+        // Aggiungi un listener al campo di ricerca per aggiornare il predicato
         campoRicercaChat.textProperty().addListener((observable, oldValue, newValue) -> {
+            logger.debug("Testo ricerca cambiato da '{}' a '{}'", oldValue, newValue);
+
             conversazioniFiltrate.setPredicate(conversazione -> {
                 // Se il campo di ricerca è vuoto, mostra tutto
                 if (newValue == null || newValue.isEmpty()) {
@@ -186,13 +207,29 @@ public class GeneralUI extends GestisciClient {
 
                 String testoMinuscolo = newValue.toLowerCase();
 
-                // Controlla se il nome utente dell'altro partecipante contiene il testo
-                return conversazione.getAltroUtente().getUsername().toLowerCase().contains(testoMinuscolo);
+                // Verifica che altroUtente non sia null prima di usarlo
+                if (conversazione.getAltroUtente() == null) {
+                    return false;
+                }
+
+                // Controlla sia username che nome/cognome se disponibili
+                boolean matchUsername = conversazione.getAltroUtente().getUsername().toLowerCase().contains(testoMinuscolo);
+                boolean matchNome = false;
+
+                if (conversazione.getAltroUtente().getNome() != null) {
+                    matchNome = conversazione.getAltroUtente().getNome().toLowerCase().contains(testoMinuscolo);
+                }
+
+                boolean matchCognome = false;
+                if (conversazione.getAltroUtente().getCognome() != null) {
+                    matchCognome = conversazione.getAltroUtente().getCognome().toLowerCase().contains(testoMinuscolo);
+                }
+
+                return matchUsername || matchNome || matchCognome;
             });
         });
 
-        // Collega la lista filtrata alla ListView
-        listaChat.setItems(conversazioniFiltrate);
+        logger.info("Filtro ricerca impostato con successo");
     }
 
 

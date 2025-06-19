@@ -102,9 +102,8 @@ public class ChatUI {
                 boolean messaggioMio = utenteLoggato != null && messaggio.getId_mittente() == utenteLoggato.getId();
 
                 HBox intestazione = new HBox(10);
-                //String nomeMittente = clientChat.getNomeMittente(messaggio, clientChat.getUtentiConosciuti(), messaggio.getId_mittente());
-                //String nomeMittente = clientChat.getNomeMittente(messaggio, clientChat.getUtentiConosciuti(), utenteLoggato.getId());
-                String nomeMittente = messaggioMio ? "Tu" : "Utente " + messaggio.getId_mittente();
+                String nomeMittente = clientChat.getNomeMittente(messaggio, clientChat.getUtentiConosciuti(), utenteLoggato.getId());
+
                 System.out.println("Nome mittente: " + nomeMittente);
                 Label mittente = new Label(nomeMittente);
                 mittente.setFont(Font.font("System", FontWeight.BOLD, 12));

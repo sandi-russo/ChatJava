@@ -1,6 +1,7 @@
 package chat.db;
 
 import chat.common.Conversazione;
+import chat.common.Messaggio;
 import chat.common.Utente;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -34,7 +35,7 @@ public class GestioneChat {
                         ELSE MIN(u.id)
                     END                   AS id_altro_utente,
                 
-                                        
+                
                     CASE
                         WHEN c.is_group THEN
                              CONCAT('gruppo con ',
@@ -42,7 +43,7 @@ public class GestioneChat {
                                                  ORDER BY u.username SEPARATOR ', '))
                         ELSE MIN(u.username)
                     END                   AS username,
-     
+                
                     CASE WHEN c.is_group THEN NULL ELSE MIN(u.nome)     END AS nome,
                     CASE WHEN c.is_group THEN NULL ELSE MIN(u.cognome)  END AS cognome,
                     CASE WHEN c.is_group THEN NULL ELSE MIN(u.avatar)   END AS avatar,
@@ -87,4 +88,73 @@ public class GestioneChat {
         return conversazioni;
     }
 
+
+    // Cambiare in getMessaggiPerChat(int idChat)
+    public List<Messaggio> getMessaggiPerChat(int idChat) throws SQLException {
+        List<Messaggio> messaggi = new ArrayList<>();
+
+        String sql = """
+                SELECT 
+                    m.id AS id_messaggio,
+                    m.contenuto AS testo_messaggio,
+                    m.sent_at AS data_invio,
+                    m.mittente_id AS id_mittente,
+                    m.chat_id AS id_chat,
+                    m.tipo_messaggio
+                FROM 
+                    messaggi m
+                WHERE 
+                    m.chat_id = ?
+                ORDER BY 
+                    m.sent_at ASC
+                """;
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement statement = conn.prepareStatement(sql)) {
+
+            statement.setInt(1, idChat);
+            ResultSet result = statement.executeQuery();
+
+            while (result.next()) {
+                Messaggio messaggio = new Messaggio(
+                        result.getString("testo_messaggio"),
+                        result.getInt("id_mittente"),
+                        result.getInt("id_chat")
+                );
+
+                messaggio.setId(result.getInt("id_messaggio"));
+                messaggi.add(messaggio);
+            }
+        } catch (SQLException e) {
+            logger.error("Errore durante il recupero dei messaggi per la chat {}", idChat, e);
+            throw e;
+        }
+
+        logger.info("Recuperati {} messaggi per la chat {}", messaggi.size(), idChat);
+        return messaggi;
+    }
+
+    public List<Utente> getUtentiPerChat(int idChat) throws SQLException {
+        List<Utente> utenti = new ArrayList<>();
+        String query = "SELECT u.* FROM utenti u " +
+                "JOIN chat_membri cm ON u.id = cm.utente_id " +
+                "WHERE cm.chat_id = ?";
+        try (PreparedStatement stmt = dbManager.getConnection().prepareStatement(query)) {
+            stmt.setInt(1, idChat);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Utente utente = new Utente(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("nome"),
+                            rs.getString("cognome"),
+                            rs.getString("email"),
+                            rs.getString("avatar")
+                    );
+                    utenti.add(utente);
+                }
+            }
+        }
+        return utenti;
+    }
 }

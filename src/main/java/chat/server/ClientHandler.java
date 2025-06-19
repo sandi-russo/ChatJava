@@ -396,6 +396,7 @@ public class ClientHandler implements Runnable {
                     conversazioniList.size(), idUtenteRichiedente);
             logger.info("ClientHandler: Lista serializzabile creata con {} elementi.", conversazioniList.size());
 
+
             // inviaRisposta(conversazioni);
             // Forse queste richieste è meglio cambiarle in "risposte" per non confondere tutto...
             RichiestaConversazioni risposta = new RichiestaConversazioni(conversazioniList);

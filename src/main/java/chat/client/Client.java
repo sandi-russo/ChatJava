@@ -41,6 +41,7 @@ public class Client {
 
     public Client(GestisciClient gestisciClient) {
         //this.utenteClient = utente;
+        this.utentiConosciuti = new HashMap<>();
         this.gestisciClient = gestisciClient;
         try {
             inizializzaConnessione();
@@ -129,9 +130,9 @@ public class Client {
                         case String messaggioErrore -> {
                             if (controlloreLogin != null) {
                                 controlloreLogin.gestisciLoginFallito(messaggioErrore);
-                            } else if(controlloreRegistrazione != null) {
+                            } else if (controlloreRegistrazione != null) {
                                 controlloreRegistrazione.gestisciRegistrazioneFallita(messaggioErrore);
-                            } else if(controlloreGeneralUI != null){
+                            } else if (controlloreGeneralUI != null) {
                                 controlloreGeneralUI.gestisciConversazioneFallito(messaggioErrore);
                             }
                         }
@@ -221,6 +222,11 @@ public class Client {
         });
     }
 
+
+    public HashMap<Integer, Utente> getUtentiConosciuti() {
+        return utentiConosciuti;
+    }
+
     // serve per richiamare il controller di Login, in questo modo, subito il login, mi va a chiamare la classe Login
     public void setControlloreLogin(Login controller) {
         this.controlloreLogin = controller;
@@ -279,7 +285,6 @@ public class Client {
     public Utente getUtenteDaGestisciClient() {
         return gestisciClient.getUtenteLoggato();
     }
-
 
     // disconnetto il client dal server
     public void disconnetti() {

@@ -44,7 +44,7 @@
         <HBox alignment="CENTER_LEFT" prefHeight="50.0" prefWidth="200.0" spacing="10.0" style="-fx-background-color: #eeeeee; -fx-border-color: #cccccc; -fx-border-width: 1 0 0 0;" BorderPane.alignment="CENTER">
             <children>
                 <ImageView fx:id="avatarUtenteLoggato" fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true" />
-                <VBox>
+                <VBox alignment="CENTER_LEFT">
                     <children>
                         <Label fx:id="labelNomeUtente" text="Nome Cognome">
                             <font>
