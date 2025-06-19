@@ -308,6 +308,17 @@ public class ClientHandler implements Runnable {
 
                 break;
 
+            case richiestaListaUtenti:
+                logger.info("Elaborazione richiesta lista utenti");
+                RichiestaListaUtenti richiestaListaUtenti = (RichiestaListaUtenti) richiesta;
+                gestisciRichiestaListaUtenti(richiestaListaUtenti);
+                break;
+
+            case richiestaNuovaChat:
+                RichiestaNuovaChat richiestaNuovaChat = (RichiestaNuovaChat) richiesta;
+                gestisciRichiestaNuovaChat(richiestaNuovaChat);
+                break;
+
             default:
                 System.out.println("Richiesta non esiste.");
                 break;
@@ -451,6 +462,52 @@ public class ClientHandler implements Runnable {
             }
         } catch (SQLException e) {
             logger.error("Errore durante il salvataggio del messaggio nel database: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+
+    private void gestisciRichiestaListaUtenti(RichiestaListaUtenti richiesta) {
+        logger.info("Gestione richiesta lista utenti");
+        try {
+            GestioneUtente gestioneUtente = new GestioneUtente(dbManager);
+            List<Utente> utenti = gestioneUtente.getListaUtenti(richiesta.getFiltroRicerca());
+            logger.info("Trovati {} utenti da inviare al client", utenti.size());
+
+            // Crea la risposta
+            RichiestaListaUtenti risposta = new RichiestaListaUtenti(utenti);
+            inviaRisposta(risposta);
+        } catch (SQLException e) {
+            logger.error("Errore nel recupero della lista utenti: {}", e.getMessage(), e);
+            inviaRisposta("Errore nel recupero della lista utenti");
+        }
+    }
+
+
+    private void gestisciRichiestaNuovaChat(RichiestaNuovaChat richiesta) throws SQLException {
+        GestioneChat gestioneChat = new GestioneChat(dbManager);
+
+        try {
+            // Crea la nuova chat nel database con il nome del gruppo se applicabile
+            int idChat = gestioneChat.creaNuovaChat(richiesta.isGruppo(), richiesta.getNomeGruppo());
+
+            // Aggiungi l'utente creatore
+            gestioneChat.aggiungiUtenteAChat(idChat, richiesta.getIdCreatore());
+
+            // Aggiungi gli altri utenti
+            for (int idUtente : richiesta.getIdUtenti()) {
+                gestioneChat.aggiungiUtenteAChat(idChat, idUtente);
+            }
+
+            // Ottieni la conversazione appena creata
+            Conversazione nuovaConversazione = gestioneChat.getConversazionePerId(idChat, richiesta.getIdCreatore());
+
+            // Invia la risposta
+            RichiestaNuovaChat risposta = new RichiestaNuovaChat(nuovaConversazione);
+            inviaRisposta(risposta);
+
+        } catch (SQLException e) {
+            logger.error("Errore nella creazione della nuova chat: {}", e.getMessage());
             throw e;
         }
     }

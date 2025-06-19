@@ -157,6 +157,19 @@ public class Client {
                                 controlloreGeneralUI.gestisciConversazioneConSuccesso(risposta);
                             }
                         }
+                        case RichiestaListaUtenti risposta -> {
+                            logger.info("Ricevuta risposta richiestaListaUtenti con {} utenti",
+                                    risposta.getUtenti() != null ? risposta.getUtenti().size() : 0);
+
+                            if (controlloreGeneralUI != null) {
+                                controlloreGeneralUI.gestisciListaUtentiConSuccesso(risposta);
+                            }
+                        }
+                        case RichiestaNuovaChat risposta -> {
+                            if (controlloreGeneralUI != null) {
+                                controlloreGeneralUI.gestisciNuovaChatConSuccesso(risposta);
+                            }
+                        }
                         default -> {
                             System.out.println("Client: l'oggetto ricevuto non è fra quelli che io gestisco");
                         }
@@ -221,7 +234,6 @@ public class Client {
             }
         });
     }
-
 
     public HashMap<Integer, Utente> getUtentiConosciuti() {
         return utentiConosciuti;

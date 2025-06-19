@@ -157,4 +157,107 @@ public class GestioneChat {
         }
         return utenti;
     }
+
+    public int creaNuovaChat(boolean isGruppo, String nomeGruppo) throws SQLException {
+        String sql = "INSERT INTO chat (nome_chat, is_group) VALUES (?, ?)";
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            // Se è un gruppo, usa il nome specificato, altrimenti NULL
+            if (isGruppo && nomeGruppo != null && !nomeGruppo.isEmpty()) {
+                stmt.setString(1, nomeGruppo);
+            } else {
+                stmt.setNull(1, java.sql.Types.VARCHAR);
+            }
+
+            stmt.setBoolean(2, isGruppo);
+
+            int righeInserite = stmt.executeUpdate();
+
+            if (righeInserite > 0) {
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        int idChat = generatedKeys.getInt(1);
+                        logger.info("Creata nuova chat con ID: {}", idChat);
+                        return idChat;
+                    } else {
+                        throw new SQLException("Creazione chat fallita, nessun ID ottenuto.");
+                    }
+                }
+            } else {
+                throw new SQLException("Creazione chat fallita, nessuna riga inserita.");
+            }
+        } catch (SQLException e) {
+            logger.error("Errore durante la creazione della chat: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    public void aggiungiUtenteAChat(int idChat, int idUtente) throws SQLException {
+        String sql = "INSERT INTO chat_membri (chat_id, utente_id) VALUES (?, ?)";
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idChat);
+            stmt.setInt(2, idUtente);
+
+            stmt.executeUpdate();
+        }
+    }
+
+    public Conversazione getConversazionePerId(int idChat, int idUtenteLoggato) throws SQLException {
+        String sql = """
+                SELECT
+                    c.id AS id_chat,
+                    CASE
+                        WHEN c.is_group THEN 0
+                        ELSE MIN(u.id)
+                    END AS id_altro_utente,
+                    CASE
+                        WHEN c.is_group THEN
+                             CONCAT('gruppo con ',
+                                    GROUP_CONCAT(DISTINCT u.username
+                                                 ORDER BY u.username SEPARATOR ', '))
+                        ELSE MIN(u.username)
+                    END AS username,
+                    CASE WHEN c.is_group THEN NULL ELSE MIN(u.nome) END AS nome,
+                    CASE WHEN c.is_group THEN NULL ELSE MIN(u.cognome) END AS cognome,
+                    CASE WHEN c.is_group THEN NULL ELSE MIN(u.avatar) END AS avatar,
+                    c.is_group AS is_group
+                FROM chat c
+                LEFT JOIN chat_membri cm ON c.id = cm.chat_id AND cm.utente_id <> ?
+                LEFT JOIN utenti u ON u.id = cm.utente_id
+                WHERE c.id = ?
+                GROUP BY c.id
+                """;
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUtenteLoggato);
+            stmt.setInt(2, idChat);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Utente altroUtente = new Utente(
+                            rs.getInt("id_altro_utente"),
+                            rs.getString("username"),
+                            rs.getString("nome"),
+                            rs.getString("cognome"),
+                            null,
+                            rs.getString("avatar")
+                    );
+
+                    boolean isGroup = rs.getBoolean("is_group");
+                    String titolo = isGroup ? rs.getString("username") : "Chat con " + altroUtente.getUsername();
+
+                    return new Conversazione(idChat, titolo, altroUtente);
+                }
+            }
+        }
+
+        return null;
+    }
 }

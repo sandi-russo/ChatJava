@@ -1,19 +1,26 @@
 package chat.db;
 
 import chat.common.Utente;
+import chat.server.ClientHandler;
 import com.password4j.Password;
 import com.password4j.BcryptFunction;
 import com.password4j.types.Bcrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GestioneUtente {
 
     private final MySQLManager dbManager;
     private static final BcryptFunction BCRYPT_FUNCTION = BcryptFunction.getInstance(Bcrypt.B, 10);
+    private static final Logger logger = LoggerFactory.getLogger(GestioneUtente.class);
+
 
     public GestioneUtente(MySQLManager dbManager) {
         this.dbManager = dbManager;
@@ -102,5 +109,44 @@ public class GestioneUtente {
         public LoginException(String message) {
             super(message);
         }
+    }
+
+    public List<Utente> getListaUtenti(String filtro) throws SQLException {
+        List<Utente> utenti = new ArrayList<>();
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM utenti");
+        if (filtro != null && !filtro.isEmpty()) {
+            sql.append(" WHERE username LIKE ? OR nome LIKE ? OR cognome LIKE ?");
+        }
+        sql.append(" ORDER BY username");
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+
+            if (filtro != null && !filtro.isEmpty()) {
+                String param = "%" + filtro + "%";
+                stmt.setString(1, param);
+                stmt.setString(2, param);
+                stmt.setString(3, param);
+            }
+
+            logger.info("Esecuzione query: {}", sql);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Utente utente = new Utente(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("nome"),
+                            rs.getString("cognome"),
+                            rs.getString("email"),
+                            rs.getString("avatar")
+                    );
+                    utenti.add(utente);
+                }
+            }
+        }
+
+        logger.info("Recuperati {} utenti dal database", utenti.size());
+        return utenti;
     }
 }

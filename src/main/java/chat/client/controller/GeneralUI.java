@@ -5,19 +5,30 @@ import chat.client.GestoreFeedbackUI;
 import chat.common.Conversazione;
 import chat.common.Utente;
 import chat.richieste.RichiestaConversazioni;
+import chat.richieste.RichiestaListaUtenti;
+import chat.richieste.RichiestaNuovaChat;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URL;
 import java.util.List;
 
 import java.io.File;
@@ -38,6 +49,8 @@ public class GeneralUI extends GestisciClient {
     private Label labelUsername;
     @FXML
     private Label feedbackLabel;
+    @FXML
+    private Button btnNuovaChat;
     @FXML
     private ChatUI chatUIController;
     // Etichetta da nascondere quando si seleziona una chat
@@ -170,7 +183,7 @@ public class GeneralUI extends GestisciClient {
 
             logger.info("GeneralUI: ObservableList aggiornata con {} elementi.", conversazioni.size());
 
-           // listaChat.setItems(conversazioni);
+            // listaChat.setItems(conversazioni);
             logger.info("Caricate {} conversazioni per l'utente {}", conversazioni.size(), utenteLoggato.getUsername());
         });
     }
@@ -262,4 +275,108 @@ public class GeneralUI extends GestisciClient {
             clientChat.disconnetti();
         }
     }
+
+
+    @FXML
+    private void mostraDialogNuovaChat() {
+        try {
+            // Carica il file FXML
+            URL location = getClass().getResource("/fxml/NuovaChatDialog.fxml");
+
+            if (location == null) {
+                logger.error("Impossibile trovare il file NuovaChatDialog.fxml");
+                GestoreFeedbackUI.mostraErrore(feedbackLabel, "Errore nell'apertura del dialog");
+                return;
+            }
+
+            // Carica il file FXML
+            FXMLLoader loader = new FXMLLoader(location);
+            Parent root = loader.load();
+            Scene scene = new Scene(root);
+
+            // Configura la finestra di dialogo
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Nuova Chat");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner(btnNuovaChat.getScene().getWindow());
+            dialogStage.setScene(scene);
+
+            // Ottieni il controller e imposta i dati
+            NuovaChatDialog controller = loader.getController();
+
+            // Salva il controller come userData della scena per recuperarlo più tardi
+            scene.setUserData(controller);
+
+            controller.setDialogStage(dialogStage);
+            controller.setClient(clientChat);
+            controller.setUtenteLoggato(utenteLoggato);
+
+            // Carica la lista degli utenti
+            controller.caricaUtenti();
+
+            // Mostra la finestra di dialogo
+            dialogStage.showAndWait();
+        } catch (IOException e) {
+            logger.error("Errore nell'apertura del dialog per nuova chat: {}", e.getMessage(), e);
+            GestoreFeedbackUI.mostraErrore(feedbackLabel, "Errore nell'apertura del dialog");
+        }
+    }
+
+
+    public void gestisciListaUtentiConSuccesso(RichiestaListaUtenti risposta) {
+        logger.info("Ricevuta risposta con lista utenti: {} utenti",
+                risposta.getUtenti() != null ? risposta.getUtenti().size() : 0);
+
+        Platform.runLater(() -> {
+            // Trova il controller NuovaChatDialog attivo
+            for (Window window : Window.getWindows()) {
+                if (window instanceof Stage stage && stage.isShowing() && stage.getTitle().equals("Nuova Chat")) {
+                    logger.info("Trovata finestra dialog Nuova Chat attiva");
+
+                    Scene scene = stage.getScene();
+                    if (scene != null) {
+                        // Cerca il controller nella scena
+                        for (Node node : scene.getRoot().lookupAll("*")) {
+                            if (node.getUserData() instanceof NuovaChatDialog) {
+                                NuovaChatDialog controller = (NuovaChatDialog) node.getUserData();
+                                controller.aggiornaListaUtenti(risposta.getUtenti());
+                                return;
+                            }
+                        }
+
+                        // Prova ad ottenere il controller usando FXMLLoader
+                        Object controller = scene.getUserData();
+                        if (controller instanceof NuovaChatDialog) {
+                            ((NuovaChatDialog) controller).aggiornaListaUtenti(risposta.getUtenti());
+                            return;
+                        }
+                    }
+                }
+            }
+
+            logger.warn("Non è stato possibile trovare la finestra di dialog attiva o il suo controller");
+        });
+    }
+
+
+    public void gestisciNuovaChatConSuccesso(RichiestaNuovaChat risposta) {
+        Platform.runLater(() -> {
+            if (risposta.getNuovaConversazione() != null) {
+                // Aggiungi la nuova conversazione alla lista
+                conversazioni.add(0, risposta.getNuovaConversazione());
+
+                // Aggiorna gli utenti conosciuti
+                Utente altroUtente = risposta.getNuovaConversazione().getAltroUtente();
+                if (altroUtente != null && altroUtente.getId() != 0) {
+                    clientChat.getUtentiConosciuti().put(altroUtente.getId(), altroUtente);
+                }
+
+                // Seleziona la nuova chat
+                listaChat.getSelectionModel().select(0);
+                selezionaChat(risposta.getNuovaConversazione());
+            }
+        });
+    }
+
+
 }
