@@ -11,7 +11,7 @@
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane fx:id="PannelloPrincipale" prefHeight="600.0" prefWidth="550.0" visible="false" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="chat.client.controller.ChatUI">
+<BorderPane fx:id="PannelloPrincipale" prefHeight="600.0" prefWidth="550.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="chat.client.controller.ChatUI">
     <top>
         <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-background-color: #f5f5f5; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0;" BorderPane.alignment="CENTER">
             <padding>
@@ -23,11 +23,12 @@
                         <Circle centerX="20" centerY="20" radius="20" />
                     </clip>
                 </ImageView>
-                <Label fx:id="chatNome" text="Nome Contatto">
+                <Label fx:id="chatNome" prefHeight="25.0" prefWidth="398.0" text="Nome Contatto">
                     <font>
                         <Font name="System Bold" size="16.0" />
                     </font>
                 </Label>
+            <Button fx:id="btnMenu" alignment="CENTER_RIGHT" mnemonicParsing="false" onAction="#ListaMembriGruppo" text="Membri" textAlignment="CENTER" />
             </children>
         </HBox>
     </top>

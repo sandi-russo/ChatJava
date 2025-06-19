@@ -327,6 +327,11 @@ public class ClientHandler implements Runnable {
                 gestisciRichiestaNuovaChat(richiestaNuovaChat);
                 break;
 
+            case richiestaMembriGruppo:
+                RichiestaMembriGruppo richiestaMembri = (RichiestaMembriGruppo) richiesta;
+                gestisciRichiestaMembriGruppo(richiestaMembri);
+                break;
+
             default:
                 System.out.println("Richiesta non esiste.");
                 break;
@@ -360,41 +365,43 @@ public class ClientHandler implements Runnable {
 
     private void gestisciRegistrazione(RichiestaRegistrazioneUtente richiesta) {
         GestioneUtente gestioneUtente = new GestioneUtente(dbManager);
+        Path cartellaDest = Paths.get("dati_server/avatar");
+
+        try { Files.createDirectories(cartellaDest); }
+        catch (IOException e) { logger.error("Errore cartella avatar", e); inviaRisposta("Errore server"); return; }
+
         String percorsoAvatarDaSalvare = null;
 
-        if (richiesta.getAvatarBytes() != null) {
-            // l'utente ha scelto un file, allora lo copiamo e salviamo il percorso
+        if (richiesta.getAvatarBytes() != null && richiesta.getAvatarBytes().length > 0) {
             try {
-                Path cartellaDest = Paths.get("dati_server/avatar");
-                Files.createDirectories(cartellaDest); // creo la cartella, se non esiste
-
-                // creo il file con il timestamp per avere un nome univoco
-                String est = richiesta.getAvatarOriginalName().substring(richiesta.getAvatarOriginalName().lastIndexOf('.')); // ".png"
+                String est = richiesta.getAvatarOriginalName()
+                        .substring(richiesta.getAvatarOriginalName().lastIndexOf('.'));
                 String nomeFile = richiesta.getUsername() + "_" + System.currentTimeMillis() + est;
                 Path destinazione = cartellaDest.resolve(nomeFile);
-
-                // scrivo i byte sul disco del server
                 Files.write(destinazione, richiesta.getAvatarBytes());
-
                 percorsoAvatarDaSalvare = destinazione.toString();
-
-            } catch (IOException e) {
-                logger.error("Errore durante il salvataggio dell'avatar", e);
-                inviaRisposta("Errore nel salvataggio dell'immagine");
-                return;
-            }
+            } catch (IOException e) { logger.error("Errore salvataggio avatar", e); }
         }
+
+        if (percorsoAvatarDaSalvare == null)
+            percorsoAvatarDaSalvare = cartellaDest.resolve("default.png").toString();
 
         try {
-            System.out.println("Sto per registrare l'utente");
-            Utente utente = gestioneUtente.registraUtente(richiesta.getUsername(), richiesta.getNome(), richiesta.getCognome(), richiesta.getEmail(), richiesta.getPassword(), percorsoAvatarDaSalvare);
-            RichiestaRegistrazioneUtente risposta = new RichiestaRegistrazioneUtente();
-            inviaRisposta(risposta);
-
+            gestioneUtente.registraUtente(
+                    richiesta.getUsername(),
+                    richiesta.getNome(),
+                    richiesta.getCognome(),
+                    richiesta.getEmail(),
+                    richiesta.getPassword(),
+                    percorsoAvatarDaSalvare
+            );
+            inviaRisposta(new RichiestaRegistrazioneUtente());
         } catch (SQLException | GestioneUtente.UserRegistrationException e) {
-            throw new RuntimeException(e);
+            logger.error("Errore registrazione utente", e);
+            inviaRisposta("Errore registrazione");
         }
     }
+
 
 
     private void gestisciConversazioni(RichiestaConversazioni richiesta) {
@@ -534,6 +541,25 @@ public class ClientHandler implements Runnable {
         } catch (SQLException e) {
             logger.error("Errore nella creazione della nuova chat: {}", e.getMessage());
             throw e;
+        }
+    }
+
+    private void gestisciRichiestaMembriGruppo(RichiestaMembriGruppo richiesta) {
+        try {
+            GestioneChat gestioneChat = new GestioneChat(dbManager);
+            int idChat = richiesta.getIdChat();
+
+            // Ottieni i membri della chat dal database
+            List<Utente> utenti = gestioneChat.getUtentiPerChat(idChat);
+            logger.info("Trovati {} membri per la chat ID: {}", utenti.size(), idChat);
+
+            // Crea e invia la risposta
+            RichiestaMembriGruppo risposta = new RichiestaMembriGruppo(utenti);
+            inviaRisposta(risposta);
+
+        } catch (SQLException e) {
+            logger.error("Errore nel recupero dei membri della chat: {}", e.getMessage(), e);
+            inviaRisposta("Errore nel recupero dei membri della chat");
         }
     }
 

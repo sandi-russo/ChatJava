@@ -24,7 +24,7 @@ public class Messaggio implements Serializable {
 
     // Quando i client mandano un messaggio non sanno quale id avrà quel messaggio nella chat conviene creare
     // questo nuovo costruttore così i client usano questo, poi il server assegna al messaggio un id.
-    public Messaggio(String testo,  int mittente, int chat_destinataria){
+    public Messaggio(String testo, int mittente, int chat_destinataria) {
         this.testo = testo;
         this.id_mittente = mittente;
         this.id_chat_destinataria = chat_destinataria;
@@ -32,7 +32,7 @@ public class Messaggio implements Serializable {
     }
 
     // In questo costruttore String = null. Quindi può essere usato per mandare un messaggio vuoto.
-    public Messaggio(int mittente, int chat_destinataria){
+    public Messaggio(int mittente, int chat_destinataria) {
         this.id_mittente = mittente;
         this.id_chat_destinataria = chat_destinataria;
         this.ora = Instant.now();
@@ -60,8 +60,7 @@ public class Messaggio implements Serializable {
 
     // la utilizzo per stampare l'ora nel messaggio nel formato ora:minuti:secondi
     public String getOraFormattata() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
-                .withZone(ZoneId.systemDefault());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy - HH:mm").withZone(ZoneId.systemDefault());
         return formatter.format(ora);
     }
 

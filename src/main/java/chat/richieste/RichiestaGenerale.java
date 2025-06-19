@@ -24,7 +24,7 @@ public class RichiestaGenerale implements IRichiesta, Serializable {
         return tipo;
     }
 
-    public void inviaRichiesta(ObjectOutputStream out){
+    public void inviaRichiesta(ObjectOutputStream out) throws IOException {
         try {
                 out.reset();
                 out.writeObject(this);

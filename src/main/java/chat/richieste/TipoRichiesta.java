@@ -10,5 +10,6 @@ public enum TipoRichiesta {
     richiestaMessaggio,
     richiestaConversazioni,
     richiestaListaUtenti,
-    richiestaNuovaChat
+    richiestaNuovaChat,
+    richiestaMembriGruppo
 }

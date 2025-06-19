@@ -1,7 +1,6 @@
 package chat.db;
 
 import chat.common.Utente;
-import chat.server.ClientHandler;
 import com.password4j.Password;
 import com.password4j.BcryptFunction;
 import com.password4j.types.Bcrypt;

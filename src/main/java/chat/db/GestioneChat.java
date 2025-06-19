@@ -33,32 +33,24 @@ public class GestioneChat {
                     CASE
                         WHEN c.is_group THEN 0
                         ELSE MIN(u.id)
-                    END                   AS id_altro_utente,
-                
-                
+                    END AS id_altro_utente,
                     CASE
-                        WHEN c.is_group THEN
-                             CONCAT('gruppo con ',
-                                    GROUP_CONCAT(DISTINCT u.username
-                                                 ORDER BY u.username SEPARATOR ', '))
+                        WHEN c.is_group THEN c.nome_chat
                         ELSE MIN(u.username)
-                    END                   AS username,
-                
+                    END AS username,
                     CASE WHEN c.is_group THEN NULL ELSE MIN(u.nome)     END AS nome,
                     CASE WHEN c.is_group THEN NULL ELSE MIN(u.cognome)  END AS cognome,
                     CASE WHEN c.is_group THEN NULL ELSE MIN(u.avatar)   END AS avatar,
-                
                     c.is_group AS is_group
-                FROM chat_membri cm1   
-                JOIN chat         c  ON c.id = cm1.chat_id
+                FROM chat_membri cm1
+                JOIN chat c ON c.id = cm1.chat_id
                 LEFT JOIN chat_membri cm2
                        ON cm2.chat_id = c.id
                       AND cm2.utente_id <> cm1.utente_id
                 LEFT JOIN utenti u ON u.id = cm2.utente_id
                 WHERE cm1.utente_id = ?
                 GROUP BY c.id
-                ORDER BY c.id DESC;
-                
+                ORDER BY c.id DESC;                
                 """;
 
         try (Connection conn = dbManager.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
@@ -79,7 +71,7 @@ public class GestioneChat {
                 );
 
                 boolean isGroup = result.getBoolean("is_group");
-                String titolo = isGroup ? result.getString("username") : "Chat con " + altroUtente.getUsername();
+                String titolo = isGroup ? result.getString("username") : altroUtente.getUsername();
                 conversazioni.add(new Conversazione(idChat, titolo, altroUtente));
             }
         } catch (SQLException e) {
@@ -217,7 +209,7 @@ public class GestioneChat {
                     END AS id_altro_utente,
                     CASE
                         WHEN c.is_group THEN
-                             CONCAT('gruppo con ',
+                             CONCAT('Gruppo con ',
                                     GROUP_CONCAT(DISTINCT u.username
                                                  ORDER BY u.username SEPARATOR ', '))
                         ELSE MIN(u.username)

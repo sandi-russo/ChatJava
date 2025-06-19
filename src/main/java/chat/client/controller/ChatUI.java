@@ -1,19 +1,14 @@
 package chat.client.controller;
 
-import chat.common.Chat;
-import chat.common.Conversazione;
-import chat.common.Messaggio;
-import chat.common.Utente;
+import chat.common.*;
+import chat.richieste.RichiestaMembriGruppo;
 import chat.richieste.RichiestaMessaggio;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -23,6 +18,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +29,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+
+import static chat.client.GestoreFeedbackUI.mostraErrore;
 
 public class ChatUI {
     private static final Logger logger = LoggerFactory.getLogger(ChatUI.class);
@@ -45,6 +44,8 @@ public class ChatUI {
     private TextField CellaMessaggio;
     @FXML
     private Button btnInvio;
+    @FXML
+    private Button btnMenu;
     @FXML
     private ImageView chatAvatar;
     @FXML
@@ -108,7 +109,7 @@ public class ChatUI {
                 Label mittente = new Label(nomeMittente);
                 mittente.setFont(Font.font("System", FontWeight.BOLD, 12));
 
-                String orario = LocalDateTime.now().format(TIME_FORMATTER);
+                String orario = messaggio.getOraFormattata();
                 Label timestamp = new Label(orario);
                 timestamp.setFont(Font.font("System", FontWeight.NORMAL, 10));
                 timestamp.setTextFill(Color.GRAY);
@@ -269,12 +270,81 @@ public class ChatUI {
         aggiornaMessaggi(messaggiAttuali);
     }
 
+    @FXML
+    public void ListaMembriGruppo() {
+        if (conversazioneAttuale == null) {
+            logger.warn("Nessuna conversazione selezionata");
+            return;
+        }
+
+        try {
+            // Crea la richiesta per ottenere i membri della chat
+            RichiestaMembriGruppo richiesta = new RichiestaMembriGruppo(conversazioneAttuale.getIdChat());
+
+            // Invia la richiesta al server
+            clientChat.inviaRichiestaAlServer(richiesta);
+            logger.info("Inviata richiesta membri gruppo per chat ID: {}", conversazioneAttuale.getIdChat());
+        } catch (Exception e) {
+            logger.error("Errore nell'invio della richiesta membri gruppo: {}", e.getMessage(), e);
+            mostraErrore("Impossibile ottenere i membri del gruppo");
+        }
+    }
+
+    public void gestisciMembriGruppoRicevuti(List<Utente> membri) {
+        Platform.runLater(() -> {
+            try {
+                // Crea e mostra un dialog con la lista
+                Stage dialog = new Stage();
+                dialog.initModality(Modality.APPLICATION_MODAL);
+                dialog.setTitle("Membri della chat: " + conversazioneAttuale.getNomeVisualizzato());
+
+                // Crea una lista per mostrare i membri
+                ListView<String> listaMembri = new ListView<>();
+
+                // Popola la lista con i nomi degli utenti
+                for (Utente utente : membri) {
+                    String nome = utente.getUsername();
+                    if (utente.getId() == utenteLoggato.getId()) {
+                        nome += " (Tu)";
+                    }
+                    listaMembri.getItems().add(nome);
+                }
+
+                // Crea un pulsante per chiudere
+                Button btnChiudi = new Button("Chiudi");
+                btnChiudi.setOnAction(e -> dialog.close());
+
+                // Layout base
+                VBox layout = new VBox(15);
+                layout.setPadding(new Insets(20));
+                layout.getChildren().addAll(listaMembri, btnChiudi);
+
+                // Mostra il dialog
+                Scene scene = new Scene(layout, 400, 500);
+                dialog.setScene(scene);
+                dialog.showAndWait();
+
+            } catch (Exception e) {
+                logger.error("Errore nella visualizzazione dei membri: {}", e.getMessage(), e);
+                mostraErrore("Errore nella visualizzazione dei membri");
+            }
+        });
+    }
+
+    private void mostraErrore(String messaggio) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Errore");
+            alert.setHeaderText(null);
+            alert.setContentText(messaggio);
+            alert.showAndWait();
+        });
+    }
 
     public void setClientChat(chat.client.Client clientChat) {
         this.clientChat = clientChat;
     }
 
-    // ritorno l'ID della conversazione attuale
     public int getIdConversazioneAttuale() {
         return conversazioneAttuale != null ? conversazioneAttuale.getIdChat() : -1;
     }

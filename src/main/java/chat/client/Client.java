@@ -135,6 +135,14 @@ public class Client {
                                 controlloreGeneralUI.gestisciNuovaChatConSuccesso(risposta);
                             }
                         }
+
+                        case RichiestaMembriGruppo risposta -> {
+                            logger.info("Ricevuta risposta con {} membri della chat",
+                                    risposta.getMembri() != null ? risposta.getMembri().size() : 0);
+                            if (chatUI != null) {
+                                chatUI.gestisciMembriGruppoRicevuti(risposta.getMembri());
+                            }
+                        }
                         default -> {
                             System.out.println("Client: l'oggetto ricevuto non è fra quelli che io gestisco");
                         }
@@ -252,6 +260,7 @@ public class Client {
             }
         }
     }
+
 
     public String getNomeMittente(Messaggio messaggio, HashMap<Integer, Utente> utentiConosciuti, int idUtenteLoggato) {
         logger.info("Cercando mittente per ID: {}", messaggio.getId_mittente());
