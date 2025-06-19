@@ -70,4 +70,12 @@ public class Chat implements Serializable {
     public void aggiungiUtente(Utente utente) {
         utenti.aggiungiUtente(utente);
     }
+
+    public HashMapUtenti getUtenti() {
+        return utenti; // Dove `utenti` è il tuo HashMap interno
+    }
+
+    public boolean contieneMessaggi() {
+        return messaggi != null && !messaggi.isEmpty();
+    }
 }

@@ -1,19 +1,15 @@
 package chat.client;
 
 import chat.client.controller.*;
-import chat.common.Chat;
-import chat.common.Messaggio;
-import chat.common.Utente;
-import chat.richieste.RichiestaChat;
-import chat.richieste.RichiestaConversazioni;
-import chat.richieste.RichiestaGenerale;
-import chat.richieste.RichiestaRegistrazioneUtente;
+import chat.common.*;
+import chat.richieste.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,6 +26,8 @@ public class Client {
     private boolean connesso = false;
     private ChatUI chatUI;
     private GestisciClient gestisciClient;
+    private HashMap<Integer, Utente> utentiConosciuti;
+
     // ExecutorService per gestire le operazioni asincrone
     // Creo un pool con un singolo thread per la lettura dei messaggi
     private ExecutorService threadPool = Executors.newSingleThreadExecutor();
@@ -74,52 +72,7 @@ public class Client {
                     //System.out.println("Classe effettiva: " + ricevuto.getClass());
                     //System.out.println("È RichiestaRegistrazioneUtente? " + (ricevuto instanceof RichiestaRegistrazioneUtente));
                     //System.out.println("ClassLoader della classe ricevuta: " + ricevuto.getClass().getClassLoader());
-                    //System.out.println("ClassLoader della mia classe locale: " + RichiestaRegistrazioneUtente.class.getClassLoader());
-
-                    // se è di tipo conversazione aggiunge una conversazione
-                    // se è di tipo chat, aggiunge o modifica una chat
-                    // se è di tipo stringa, si vede quale è la String, in base a cosa c'è scritto in quella stringa (esempio: "Risposta: 1 (login effettuato con successo") allora il client reagisce in modo diverso
-
-                    /*
-                    if (ricevuto instanceof RichiestaRegistrazioneUtente) {
-                        controlloreRegistrazione.gestisciRegistrazioneConSuccesso();
-                    }
-                    if (ricevuto instanceof Chat) {
-                        nuovaChat = (Chat) ricevuto;
-                        chatAttuale = nuovaChat;
-
-                        // Aggiorna l'interfaccia grafica con i nuovi messaggi
-                        if (chatUI != null && chatUI.getIdConversazioneAttuale() == nuovaChat.getId()) {
-                            List<Messaggio> messaggi = new ArrayList<>(nuovaChat.getMessaggi().values());
-                            logger.info("Ricevuti {} messaggi da mostrare nella UI", messaggi.size());
-                            chatUI.aggiornaMessaggi(messaggi);
-                        }
-
-                        logger.info("Ricevuta chat con ID {} contenente {} messaggi",
-                                nuovaChat.getId(), nuovaChat.getMessaggi().size());
-                    }
-
-                    */
-
-                    /*
-                    switch(richiesta.getTipo()){
-                        case richiestaLogin:
-                            // connessione al db
-                            gestisciLogin((RichiestaLogin) richiesta);
-                            // Gli deve ritornare al client true o false per sapere se le sue info sono giuste, così il client si può salvare il suo utente.
-                            break;
-
-                        case richiestaRegistrazioneUtente:
-                            System.out.println("Sono in ElaboraRichiesta, prima di GestisciRegistrazione");
-                            gestisciRegistrazione((RichiestaRegistrazioneUtente) richiesta);
-                            System.out.println("Sono in ElaboraRichiesta, dopo di GestisciRegistrazione");
-                            break;
-                        default:
-                            System.out.println("Richiesta non esiste.");
-                            break;
-                    }
-                    */
-
+                    //System.out.println("ClassLoader della mia classe locale: " + RichiestaRegistrazioneUtente.class.getClassLoader())
 
                     switch (ricevuto) {
                         case Utente utente -> {
@@ -141,6 +94,18 @@ public class Client {
                         }
                         case Chat chat -> {
                             chatAttuale = chat;
+
+                            // AGGIUNGI TUTTI GLI UTENTI DELLA CHAT ALLA MAPPA
+                            if (chat.getUtenti() != null) {
+                                for (Utente utente : chat.getUtenti().getUtenti().values()) {
+                                    if (utente != null && utente.getId() != 0) {
+                                        if (!utentiConosciuti.containsKey(utente.getId())) {
+                                            utentiConosciuti.put(utente.getId(), utente);
+                                            logger.info("Aggiunto utente dalla chat: {} (ID: {})", utente.getUsername(), utente.getId());
+                                        }
+                                    }
+                                }
+                            }
 
                             // Aggiorna l'interfaccia grafica con i nuovi messaggi
                             if (chatUI != null && chatUI.getIdConversazioneAttuale() == chatAttuale.getId()) {
@@ -174,58 +139,7 @@ public class Client {
                             System.out.println("Client: l'oggetto ricevuto non è fra quelli che io gestisco");
                         }
                     }
-
-
-
-                    /*
-                    switch (ricevuto){
-                        case null -> {
-                            System.out.println("Richiesta non esiste.");
-                        }
-                        case Utente u -> {
-                            //Utente utente = (Utente) ricevuto;
-                            if (controlloreLogin != null) {
-                                controlloreLogin.gestisciLoginConSuccesso(u); // login riuscito e invio il messaggio all'utente
-                            }
-                        }
-                        case String s -> {
-                            //String messaggioErrore = (String) ricevuto;
-
-                            if (controlloreLogin != null) {
-                                controlloreLogin.gestisciLoginFallito(s); // login fallito, mando un messaggio
-                            } else {
-                                controlloreRegistrazione.gestisciRegistrazioneFallita(s);
-                            }
-                        }
-                        case
-                        }
-                    }
-                    */
-
-                    // HO MODIFICATO QUESTO
-                    /*
-                    if (ricevuto instanceof Utente) {
-                        Utente utente = (Utente) ricevuto;
-
-                        if (controlloreLogin != null) {
-                            controlloreLogin.gestisciLoginConSuccesso(utente); // login riuscito e invio il messaggio all'utente
-                        }
-
-                    } else if (ricevuto instanceof String) { // se ricevo una stringa, allora il login è fallito
-                        String messaggioErrore = (String) ricevuto;
-
-                        if (controlloreLogin != null) {
-                            controlloreLogin.gestisciLoginFallito(messaggioErrore); // login fallito, mando un messaggio
-                        } else {
-                            controlloreRegistrazione.gestisciRegistrazioneFallita(messaggioErrore);
-                        }
-                    } else {
-                        System.out.println("Client: l'oggetto ricevuto non è fra quelli che io gestisco");
-                    }
-                */
                 }
-
-
             } catch (IOException | ClassNotFoundException e) {
                 if (connesso) {
                     logger.error("Errore nella ricezione dei messaggi: {}", e.getMessage(), e);
@@ -309,6 +223,51 @@ public class Client {
             logger.info("Disconnesso dal server");
         } catch (IOException e) {
             logger.error("Errore durante la disconnessione: {}", e.getMessage());
+        }
+    }
+
+    public void aggiornaUtentiConosciuti(List<Chat> chats) {
+        for (Chat chat : chats) {
+            HashMapUtenti utentiChat = chat.getUtenti();
+            for (Utente utente : utentiChat.getUtenti().values()) {
+                if (!utentiConosciuti.containsKey(utente.getId())) {
+                    utentiConosciuti.put(utente.getId(), utente);
+                }
+            }
+        }
+    }
+
+    public void popolaUtentiDaConversazioni(List<Conversazione> conversazioni) {
+        if (conversazioni == null) {
+            return;
+        }
+        for (Conversazione conv : conversazioni) {
+            Utente altroUtente = conv.getAltroUtente();
+            // Aggiungiamo l'utente alla mappa solo se non è nullo e ha un ID valido
+            if (altroUtente != null && altroUtente.getId() != 0) {
+                if (!utentiConosciuti.containsKey(altroUtente.getId())) {
+                    utentiConosciuti.put(altroUtente.getId(), altroUtente);
+                    logger.info("Aggiunto utente conosciuto: {} (ID: {})", altroUtente.getUsername(), altroUtente.getId());
+                }
+            }
+        }
+    }
+
+    public String getNomeMittente(Messaggio messaggio, HashMap<Integer, Utente> utentiConosciuti, int idUtenteLoggato) {
+        logger.info("Cercando mittente per ID: {}", messaggio.getId_mittente());
+        logger.info("Utenti conosciuti: {}", utentiConosciuti.keySet());
+
+        if (messaggio.getId_mittente() == idUtenteLoggato) {
+            return "Tu";
+        }
+
+        Utente mittente = utentiConosciuti.get(messaggio.getId_mittente());
+        if (mittente != null) {
+            logger.info("Trovato mittente: {}", mittente.getUsername());
+            return mittente.getUsername();
+        } else {
+            logger.warn("Nome mittente non trovato per ID: {}", messaggio.getId_mittente());
+            return "Utente " + messaggio.getId_mittente();
         }
     }
 }

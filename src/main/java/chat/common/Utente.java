@@ -23,6 +23,16 @@ public class Utente implements Serializable {
         this.createdAt = createdAt;
     }
 
+    public Utente(int id, String username, String nome, String cognome, String email, String avatar) {
+        this.id = id;
+        this.username = username;
+        this.nome = nome;
+        this.cognome = cognome;
+        this.email = email;
+        this.avatar = avatar;
+        this.createdAt = null;
+    }
+
     public int getId() {
         return id;
     }

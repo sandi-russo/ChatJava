@@ -256,7 +256,14 @@ public class ClientHandler implements Runnable {
 
                 // A QUESTO PUNTO, LA CHAT È STATA SICURAMENTE CREATA
                 // UNA VOLTA CHE ARRIVA UN MESSAGGIO DA UN UTENTE VIENE PRESA QUELLA CHAT DALLA LISTA CHATS
+                //Chat chatDaModificare = aggiornaChatDB(chats.get(nuovoMessaggio.getId_chat_destinataria()));
+
+                // Dovremmo fare: se la chat NON CONTIENE MESSAGGI, allora fai aggiornaChatDB.
                 Chat chatDaModificare = chats.get(nuovoMessaggio.getId_chat_destinataria());
+                if (chatDaModificare != null && !chatDaModificare.contieneMessaggi()) {
+                    chatDaModificare = aggiornaChatDB(chatDaModificare);
+                }
+
                 System.out.println("L'id della chat scelta è: " + chatDaModificare.getId());
 
                 /* LA CHAT CHE ABBIAMO PRESO È UN **RIFERIMENTO** ALLA CHAT DENTRO CHATS, QUINDI NON SERVE RIMETTERE LA CHAT NELLA MAPPA, PERCHÈ
@@ -272,6 +279,9 @@ public class ClientHandler implements Runnable {
                 // al client, così quando il client preme su una chat il server gli manda tutta la chat che già ha.
                 if (nuovoMessaggio.getTesto() != null) {
                     chatDaModificare.aggiungiMessaggio(nuovoMessaggio);
+                    // QUI AGGIUNGI FUNZIONE CHE AGGIUNGE ANCHE IL MESSAGGIO AL DB
+
+                    salvaMessaggioNelDB(nuovoMessaggio);
                 }
                 // ADESSO PENSIAMO ALL'INOLTRO
                 // IL SERVER SI SCORRE TUTTI LA LISTA DI TUTTI GLI UTENTI CHE SONO CONNESSI E CONTROLLA A CHI MANDARE IL MESSAGGIO
@@ -279,13 +289,12 @@ public class ClientHandler implements Runnable {
                 for (ClientHandler clientHandler : clientHandlers) {
                     if (clientHandler.activeChatID == chatDaModificare.getId()) {
                         System.out.printf("Invio aggiornamento della chat %d al client dell'utente %d.\n", chatDaModificare.getId(), clientHandler.getIdUtente());
+
                         clientHandler.inviaChatAggiornata(chatDaModificare);
                         // Qui,salva i messaggi nel db facendo una query:
                         // -INSERT INTO messaggii VALUES *tutte le info del messaggio appena mandato con il contenuto, l'id della chat a cui è destinato, il mittente, il tipo di messaggio (che sarà solo stringa in questa funzione credo), l'ora a cui è stato mandato*
                         //
                     }
-
-                    //break;
                 }
                 break;
             case richiestaConversazioni:
@@ -295,11 +304,10 @@ public class ClientHandler implements Runnable {
 
                         //gestisciConversazioni((RichiestaConversazioni) richiesta);
                         gestisciConversazioni(richiestaConversazioni);
-
-                        // ora sei al sicuro
+                        //ritornaChatConosciute(); // DA AGGIUNGERE
                     }
-                } catch (ClassCastException e){
-                    // Qui potresti loggare, lanciare eccezione o gestire il caso
+
+                } catch (ClassCastException e) {
                     String tipo = richiesta.getClass().getSimpleName();
                     throw new ClassCastException("Oggetto ricevuto non è una RichiestaConversazioni. Ma è di tipo: " + tipo);
                 }
@@ -419,6 +427,23 @@ public class ClientHandler implements Runnable {
             inviaRisposta("Errore nel ritorno delle conversazioni");
             throw new RuntimeException(e);
         }
+    }
+
+    private Chat aggiornaChatDB(Chat chat) throws SQLException {
+        GestioneChat gestioneChat = new GestioneChat(dbManager);
+        List<Messaggio> messaggiDaAggiungere = gestioneChat.getMessaggiPerChat(chat.getId());
+
+        for (Messaggio nuovoMessaggio : messaggiDaAggiungere) {
+            chat.aggiungiMessaggio(nuovoMessaggio);
+        }
+
+        // Aggiungi anche gli utenti della chat
+        List<Utente> utentiChat = gestioneChat.getUtentiPerChat(chat.getId());
+        for (Utente utente : utentiChat) {
+            chat.aggiungiUtente(utente);
+        }
+
+        return chat;
     }
 
     private void inviaRisposta(Object risposta) {
