@@ -13,7 +13,9 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import chat.db.GestioneChat;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 
@@ -268,7 +270,7 @@ public class ClientHandler implements Runnable {
                 // Se il messaggio non è vuoto, lo aggiungo alla chat.
                 // Questo è importante perché se il messaggio è vuoto allora il server restituisce comunque la chat
                 // al client, così quando il client preme su una chat il server gli manda tutta la chat che già ha.
-                if(nuovoMessaggio.getTesto() != null) {
+                if (nuovoMessaggio.getTesto() != null) {
                     chatDaModificare.aggiungiMessaggio(nuovoMessaggio);
                 }
                 // ADESSO PENSIAMO ALL'INOLTRO
@@ -376,7 +378,7 @@ public class ClientHandler implements Runnable {
     }
 
 
-    private void gestisciConversazioni (RichiestaConversazioni richiesta) {
+    private void gestisciConversazioni(RichiestaConversazioni richiesta) {
         GestioneChat gestioneChat = new GestioneChat(dbManager);
         int idUtenteRichiedente = richiesta.getIdUtenteRichiedente(); // Ottieni l'ID dalla richiesta
         logger.info("ClientHandler: Richiesta conversazioni per l'utente ID: {}", idUtenteRichiedente); // Logga l'ID
@@ -422,6 +424,37 @@ public class ClientHandler implements Runnable {
         Object oggettoRicevuto = in.readObject();
         return (RichiestaGenerale) oggettoRicevuto;
     }
+
+
+    private void salvaMessaggioNelDB(Messaggio messaggio) throws SQLException {
+        if (messaggio == null || messaggio.getTesto() == null || messaggio.getTesto().isEmpty()) {
+            logger.warn("Tentativo di salvare un messaggio vuoto o nullo nel database");
+            return;
+        }
+
+        String sql = "INSERT INTO messaggi (chat_id, mittente_id, contenuto, tipo_messaggio) VALUES (?, ?, ?, ?)";
+
+        try (java.sql.Connection conn = dbManager.getConnection();
+             java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, messaggio.getId_chat_destinataria()); // chat_id
+            stmt.setInt(2, messaggio.getId_mittente());          // mittente_id
+            stmt.setString(3, messaggio.getTesto());             // contenuto
+            stmt.setString(4, "testo");                          // tipo_messaggio (default è 'testo')
+
+            int righeInserite = stmt.executeUpdate();
+            if (righeInserite > 0) {
+                logger.info("Messaggio salvato nel database con successo. Chat ID: {}, Mittente: {}",
+                        messaggio.getId_chat_destinataria(), messaggio.getId_mittente());
+            } else {
+                logger.warn("Nessuna riga inserita durante il salvataggio del messaggio");
+            }
+        } catch (SQLException e) {
+            logger.error("Errore durante il salvataggio del messaggio nel database: {}", e.getMessage());
+            throw e;
+        }
+    }
+
 }
 
 
