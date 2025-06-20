@@ -159,14 +159,31 @@ public class ChatUI {
                 logger.info("Impostato titolo chat: {}", conversazione.getNomeVisualizzato());
             }
 
-            // Carica l'avatar dell'altro utente se disponibile
-            if (chatAvatar != null && conversazione.getAltroUtente() != null &&
-                    conversazione.getAltroUtente().getAvatar() != null) {
+            // Gestisci l'avatar in base al tipo di chat
+            if (chatAvatar != null) {
+                // Determina se è una chat di gruppo basandosi sul nome o altre proprietà
+                boolean isGruppo = isGruppoChat(conversazione);
 
-                File fileAvatar = new File(conversazione.getAltroUtente().getAvatar());
-                if (fileAvatar.exists()) {
-                    Image avatar = new Image(fileAvatar.toURI().toString());
-                    chatAvatar.setImage(avatar);
+                if (isGruppo) {
+                    // Se è un gruppo, nascondi l'avatar
+                    chatAvatar.setOpacity(0.0);
+                    logger.info("Chat di gruppo: avatar nascosto");
+                } else {
+                    // Se è una chat privata, mostra l'avatar dell'altro utente se disponibile
+                    chatAvatar.setOpacity(1.0);
+
+                    if (conversazione.getAltroUtente() != null && conversazione.getAltroUtente().getAvatar() != null) {
+                        File fileAvatar = new File(conversazione.getAltroUtente().getAvatar());
+                        if (fileAvatar.exists()) {
+                            Image avatar = new Image(fileAvatar.toURI().toString());
+                            chatAvatar.setImage(avatar);
+                            logger.info("Impostato avatar per chat privata");
+                        } else {
+                            // Se il file non esiste, puoi impostare un'immagine predefinita
+                            // chatAvatar.setImage(new Image("/path/to/default-avatar.png"));
+                            logger.warn("File avatar non trovato: {}", conversazione.getAltroUtente().getAvatar());
+                        }
+                    }
                 }
             }
 
@@ -181,6 +198,32 @@ public class ChatUI {
             }
             logger.info("Mostrata conversazione: {}", conversazione.getNomeVisualizzato());
         });
+    }
+
+    // Metodo di supporto per determinare se una conversazione è di gruppo
+    private boolean isGruppoChat(Conversazione conversazione) {
+        // Potresti avere vari modi per determinare se è un gruppo:
+
+        // 1. Se nella classe Conversazione hai un campo isGroup, usa quello
+        // if (conversazione.isGroup()) return true;
+
+        // 2. Se l'ID dell'altro utente è 0 (come sembra dal codice che hai mostrato)
+        if (conversazione.getAltroUtente() != null && conversazione.getAltroUtente().getId() == 0) {
+            return true;
+        }
+
+        // 3. Basandoti sul nome della conversazione (se inizia con "Gruppo" o contiene più nomi)
+        String nome = conversazione.getNomeVisualizzato();
+        if (nome != null && (nome.startsWith("Gruppo") || nome.contains(", "))) {
+            return true;
+        }
+
+        // 4. Se la conversazione ha più di due membri (te e un altro utente)
+        // if (conversazione.getMembri() != null && conversazione.getMembri().size() > 2) {
+        //     return true;
+        // }
+
+        return false;
     }
 
     private void inviaMessaggio() {
