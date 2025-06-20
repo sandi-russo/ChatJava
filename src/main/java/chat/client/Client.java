@@ -51,7 +51,7 @@ public class Client {
     }
 
     private void inizializzaConnessione() throws IOException {
-        socket = new Socket("localhost", 5558);
+        socket = new Socket("26.13.123.24", 5558);
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());
 

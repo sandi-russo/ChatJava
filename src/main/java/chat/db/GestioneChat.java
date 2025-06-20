@@ -111,7 +111,8 @@ public class GestioneChat {
                 Messaggio messaggio = new Messaggio(
                         result.getString("testo_messaggio"),
                         result.getInt("id_mittente"),
-                        result.getInt("id_chat")
+                        result.getInt("id_chat"),
+                        result.getTimestamp("data_invio").toInstant()
                 );
 
                 messaggio.setId(result.getInt("id_messaggio"));
@@ -201,29 +202,27 @@ public class GestioneChat {
 
     public Conversazione getConversazionePerId(int idChat, int idUtenteLoggato) throws SQLException {
         String sql = """
-                SELECT
-                    c.id AS id_chat,
-                    CASE
-                        WHEN c.is_group THEN 0
-                        ELSE MIN(u.id)
-                    END AS id_altro_utente,
-                    CASE
-                        WHEN c.is_group THEN
-                             CONCAT('Gruppo con ',
-                                    GROUP_CONCAT(DISTINCT u.username
-                                                 ORDER BY u.username SEPARATOR ', '))
-                        ELSE MIN(u.username)
-                    END AS username,
-                    CASE WHEN c.is_group THEN NULL ELSE MIN(u.nome) END AS nome,
-                    CASE WHEN c.is_group THEN NULL ELSE MIN(u.cognome) END AS cognome,
-                    CASE WHEN c.is_group THEN NULL ELSE MIN(u.avatar) END AS avatar,
-                    c.is_group AS is_group
-                FROM chat c
-                LEFT JOIN chat_membri cm ON c.id = cm.chat_id AND cm.utente_id <> ?
-                LEFT JOIN utenti u ON u.id = cm.utente_id
-                WHERE c.id = ?
-                GROUP BY c.id
-                """;
+            SELECT
+                c.id AS id_chat,
+                c.nome_chat,
+                CASE
+                    WHEN c.is_group THEN 0
+                    ELSE MIN(u.id)
+                END AS id_altro_utente,
+                CASE
+                    WHEN c.is_group THEN c.nome_chat
+                    ELSE MIN(u.username)
+                END AS username,
+                CASE WHEN c.is_group THEN NULL ELSE MIN(u.nome) END AS nome,
+                CASE WHEN c.is_group THEN NULL ELSE MIN(u.cognome) END AS cognome,
+                CASE WHEN c.is_group THEN NULL ELSE MIN(u.avatar) END AS avatar,
+                c.is_group AS is_group
+            FROM chat c
+            LEFT JOIN chat_membri cm ON c.id = cm.chat_id AND cm.utente_id <> ?
+            LEFT JOIN utenti u ON u.id = cm.utente_id
+            WHERE c.id = ?
+            GROUP BY c.id, c.nome_chat
+            """;
 
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -243,7 +242,15 @@ public class GestioneChat {
                     );
 
                     boolean isGroup = rs.getBoolean("is_group");
-                    String titolo = isGroup ? rs.getString("username") : "Chat con " + altroUtente.getUsername();
+                    String titolo;
+
+                    if (isGroup) {
+                        String nomeChat = rs.getString("nome_chat");
+                        titolo = nomeChat != null && !nomeChat.isEmpty() ? nomeChat : "Gruppo";
+                    } else {
+                        // Per chat private
+                        titolo = altroUtente.getUsername();
+                    }
 
                     return new Conversazione(idChat, titolo, altroUtente);
                 }
@@ -251,5 +258,31 @@ public class GestioneChat {
         }
 
         return null;
+    }
+
+    public Integer trovaChatPrivata(int utente1, int utente2) throws SQLException {
+        String query = """
+        SELECT chat_id
+        FROM chat_membri
+        GROUP BY chat_id
+        HAVING COUNT(*) = 2
+        AND SUM(utente_id = ?) = 1
+        AND SUM(utente_id = ?) = 1
+        ORDER BY chat_id DESC
+        """;
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, utente1);
+            stmt.setInt(2, utente2);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("chat_id");
+                } else {
+                    return null; // Nessuna chat trovata
+                }
+            }
+        }
     }
 }

@@ -521,6 +521,18 @@ public class ClientHandler implements Runnable {
 
         try {
             // Crea la nuova chat nel database con il nome del gruppo se applicabile
+
+            // Questa parte di codice serve a non far creare all'utente una chat privata tra due utenti che esiste già
+            if((richiesta.getIdUtenti().size()) == 1 && richiesta.isGruppo() == false){
+                //fai query per capire se nel result set c'è almeno un risultato. Se c'è già un risultato nel resultset
+                //allora NON DEVI CREARE LA CHAT. Altrimenti esce dall'if e crea la chat.
+                if(gestioneChat.trovaChatPrivata(richiesta.getIdUtenti().getFirst(), richiesta.getIdCreatore()) != null){
+                    logger.info("La chat tra i due utenti esiste già");
+                    return;
+                }
+            }
+
+
             int idChat = gestioneChat.creaNuovaChat(richiesta.isGruppo(), richiesta.getNomeGruppo());
 
             // Aggiungi l'utente creatore
