@@ -69,84 +69,7 @@ public class Client {
             try {
                 while (connesso) {
                     Object ricevuto = in.readObject();
-                    //System.out.println("Classe effettiva: " + ricevuto.getClass());
-                    //System.out.println("È RichiestaRegistrazioneUtente? " + (ricevuto instanceof RichiestaRegistrazioneUtente));
-                    //System.out.println("ClassLoader della classe ricevuta: " + ricevuto.getClass().getClassLoader());
-                    //System.out.println("ClassLoader della mia classe locale: " + RichiestaRegistrazioneUtente.class.getClassLoader())
-
-                    switch (ricevuto) {
-                        case Utente utente -> {
-                            if (controlloreLogin != null) {
-                                controlloreLogin.gestisciLoginConSuccesso(utente);
-                            }
-                        }
-                        case String messaggioErrore -> {
-                            if (controlloreLogin != null) {
-                                controlloreLogin.gestisciLoginFallito(messaggioErrore);
-                            } else if (controlloreRegistrazione != null) {
-                                controlloreRegistrazione.gestisciRegistrazioneFallita(messaggioErrore);
-                            } else if (controlloreGeneralUI != null) {
-                                controlloreGeneralUI.gestisciConversazioneFallito(messaggioErrore);
-                            }
-                        }
-                        case RichiestaRegistrazioneUtente ignored -> {
-                            controlloreRegistrazione.gestisciRegistrazioneConSuccesso();
-                        }
-                        case Chat chat -> {
-                            chatAttuale = chat;
-
-                            // AGGIUNGI TUTTI GLI UTENTI DELLA CHAT ALLA MAPPA
-                            if (chat.getUtenti() != null) {
-                                for (Utente utente : chat.getUtenti().getUtenti().values()) {
-                                    if (utente != null && utente.getId() != 0) {
-                                        if (!utentiConosciuti.containsKey(utente.getId())) {
-                                            utentiConosciuti.put(utente.getId(), utente);
-                                            logger.info("Aggiunto utente dalla chat: {} (ID: {})", utente.getUsername(), utente.getId());
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Aggiorna l'interfaccia grafica con i nuovi messaggi
-                            if (chatUI != null && chatUI.getIdConversazioneAttuale() == chatAttuale.getId()) {
-                                List<Messaggio> messaggi = new ArrayList<>(chatAttuale.getMessaggi().values());
-                                logger.info("Ricevuti {} messaggi da mostrare nella UI", messaggi.size());
-                                chatUI.aggiornaMessaggi(messaggi);
-                            }
-
-                            logger.info("Ricevuta chat con ID {} contenente {} messaggi",
-                                    chatAttuale.getId(), chatAttuale.getMessaggi().size());
-                        }
-                        case RichiestaConversazioni risposta -> {
-                            if (controlloreGeneralUI != null) {
-                                controlloreGeneralUI.gestisciConversazioneConSuccesso(risposta);
-                            }
-                        }
-                        case RichiestaListaUtenti risposta -> {
-                            logger.info("Ricevuta risposta richiestaListaUtenti con {} utenti",
-                                    risposta.getUtenti() != null ? risposta.getUtenti().size() : 0);
-
-                            if (controlloreGeneralUI != null) {
-                                controlloreGeneralUI.gestisciListaUtentiConSuccesso(risposta);
-                            }
-                        }
-                        case RichiestaNuovaChat risposta -> {
-                            if (controlloreGeneralUI != null) {
-                                controlloreGeneralUI.gestisciNuovaChatConSuccesso(risposta);
-                            }
-                        }
-
-                        case RichiestaMembriGruppo risposta -> {
-                            logger.info("Ricevuta risposta con {} membri della chat",
-                                    risposta.getMembri() != null ? risposta.getMembri().size() : 0);
-                            if (chatUI != null) {
-                                chatUI.gestisciMembriGruppoRicevuti(risposta.getMembri());
-                            }
-                        }
-                        default -> {
-                            System.out.println("Client: l'oggetto ricevuto non è fra quelli che io gestisco");
-                        }
-                    }
+                    elaboraOggettoRicevuto(ricevuto);
                 }
             } catch (IOException | ClassNotFoundException e) {
                 if (connesso) {
@@ -155,6 +78,82 @@ public class Client {
                 }
             }
         });
+    }
+
+    public void elaboraOggettoRicevuto(Object ricevuto){
+        switch (ricevuto) {
+            case Utente utente -> {
+                if (controlloreLogin != null) {
+                    controlloreLogin.gestisciLoginConSuccesso(utente);
+                }
+            }
+            case String messaggioErrore -> {
+                if (controlloreLogin != null) {
+                    controlloreLogin.gestisciLoginFallito(messaggioErrore);
+                } else if (controlloreRegistrazione != null) {
+                    controlloreRegistrazione.gestisciRegistrazioneFallita(messaggioErrore);
+                } else if (controlloreGeneralUI != null) {
+                    controlloreGeneralUI.gestisciConversazioneFallito(messaggioErrore);
+                }
+            }
+            case RichiestaRegistrazioneUtente ignored -> {
+                controlloreRegistrazione.gestisciRegistrazioneConSuccesso();
+            }
+            case Chat chat -> {
+                chatAttuale = chat;
+
+                // AGGIUNGI TUTTI GLI UTENTI DELLA CHAT ALLA MAPPA
+                if (chat.getUtenti() != null) {
+                    for (Utente utente : chat.getUtenti().getUtenti().values()) {
+                        if (utente != null && utente.getId() != 0) {
+                            if (!utentiConosciuti.containsKey(utente.getId())) {
+                                utentiConosciuti.put(utente.getId(), utente);
+                                logger.info("Aggiunto utente dalla chat: {} (ID: {})", utente.getUsername(), utente.getId());
+                            }
+                        }
+                    }
+                }
+
+                // Aggiorna l'interfaccia grafica con i nuovi messaggi
+                if (chatUI != null && chatUI.getIdConversazioneAttuale() == chatAttuale.getId()) {
+                    List<Messaggio> messaggi = new ArrayList<>(chatAttuale.getMessaggi().values());
+                    logger.info("Ricevuti {} messaggi da mostrare nella UI", messaggi.size());
+                    chatUI.aggiornaMessaggi(messaggi);
+                }
+
+                logger.info("Ricevuta chat con ID {} contenente {} messaggi",
+                        chatAttuale.getId(), chatAttuale.getMessaggi().size());
+            }
+            case RichiestaConversazioni risposta -> {
+                if (controlloreGeneralUI != null) {
+                    controlloreGeneralUI.gestisciConversazioneConSuccesso(risposta);
+                }
+            }
+            case RichiestaListaUtenti risposta -> {
+                logger.info("Ricevuta risposta richiestaListaUtenti con {} utenti",
+                        risposta.getUtenti() != null ? risposta.getUtenti().size() : 0);
+
+                if (controlloreGeneralUI != null) {
+                    controlloreGeneralUI.gestisciListaUtentiConSuccesso(risposta);
+                }
+            }
+            case RichiestaNuovaChat risposta -> {
+                if (controlloreGeneralUI != null) {
+                    controlloreGeneralUI.gestisciNuovaChatConSuccesso(risposta);
+                }
+            }
+
+            case RichiestaMembriGruppo risposta -> {
+                logger.info("Ricevuta risposta con {} membri della chat",
+                        risposta.getMembri() != null ? risposta.getMembri().size() : 0);
+                if (chatUI != null) {
+                    chatUI.gestisciMembriGruppoRicevuti(risposta.getMembri());
+                }
+            }
+            default -> {
+                System.out.println("Client: l'oggetto ricevuto non è fra quelli che io gestisco");
+            }
+        }
     }
 
     public HashMap<Integer, Utente> getUtentiConosciuti() {
