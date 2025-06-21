@@ -1,11 +1,10 @@
 package chat.db;
 
+import chat.common.ColorLogger;
 import chat.common.Utente;
 import com.password4j.Password;
 import com.password4j.BcryptFunction;
 import com.password4j.types.Bcrypt;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,8 +17,6 @@ public class GestioneUtente {
 
     private final MySQLManager dbManager;
     private static final BcryptFunction BCRYPT_FUNCTION = BcryptFunction.getInstance(Bcrypt.B, 10);
-    private static final Logger logger = LoggerFactory.getLogger(GestioneUtente.class);
-
 
     public GestioneUtente(MySQLManager dbManager) {
         this.dbManager = dbManager;
@@ -129,7 +126,6 @@ public class GestioneUtente {
                 stmt.setString(3, param);
             }
 
-            logger.info("Esecuzione query: {}", sql);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Utente utente = new Utente(
@@ -145,7 +141,6 @@ public class GestioneUtente {
             }
         }
 
-        logger.info("Recuperati {} utenti dal database", utenti.size());
         return utenti;
     }
 }

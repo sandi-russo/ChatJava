@@ -1,27 +1,24 @@
 package chat.client.controller;
 
 import chat.client.GestoreFeedbackUI;
+import chat.common.ColorLogger;
 import chat.common.Utente;
 import chat.db.MySQLManager;
 import chat.utils.XMLConfigLoaderDB;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class StampaLista {
 
-    private static final Logger logger = LoggerFactory.getLogger(StampaLista.class);
+    ColorLogger colorLogger = new ColorLogger();
 
     @FXML
     private Label labelTitolo;
-
     // la listview la dichiaro come <String> e non come generic <?>
     @FXML
     private ListView<String> listUtenti;
-
     @FXML
     private Label feedbackLabel;
 
@@ -46,7 +43,7 @@ public class StampaLista {
             stampaUtenti();
 
         } catch (Exception e) {
-            logger.error("Errore nella lista de utenti", e);
+            colorLogger.logError("Errore nella lista de utenti " + e);
             GestoreFeedbackUI.mostraErrore(feedbackLabel, "Errore nella configurazione del DB");
         }
     }
@@ -73,7 +70,7 @@ public class StampaLista {
             }
 
         } catch (Exception e) {
-            logger.error("Errore durante il caricamento degli utenti", e);
+            colorLogger.logError("Errore durante il caricamento degli utenti " + e);
             // Mostra un errore direttamente nella lista in caso di problemi
             listUtenti.getItems().setAll("Errore durante il caricamento degli utenti: " + e.getMessage());
         }

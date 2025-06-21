@@ -3,8 +3,6 @@ package chat.client;
 import chat.client.controller.*;
 import chat.common.*;
 import chat.richieste.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
@@ -17,8 +15,8 @@ import java.util.concurrent.Executors;
 // Questo client riceve e basta, viene mandato tutto tramite UI. Quindi forse va pure rimosso il thread che manda.
 
 public class Client {
-    private static final Logger logger = LoggerFactory.getLogger(Client.class);
-    private Utente utenteClient;
+    ColorLogger colorLogger = new ColorLogger();
+    // private Utente utenteClient;
     private Chat chatAttuale;
     private Socket socket;
     private ObjectInputStream in;
@@ -46,7 +44,7 @@ public class Client {
             //ricezioneChatsUtente(); //La funzione legge tante chats quanto il resultset della query, con il for each.
             avviaThreadLettura();
         } catch (IOException e) {
-            logger.error("Errore nella connessione al server: {}", e.getMessage());
+            colorLogger.logError("Errore nella connessione al server: " + e.getMessage());
         }
     }
 
@@ -58,7 +56,7 @@ public class Client {
         // Invio dell'utente al server per identificazione
         //out.writeObject(utenteClient);
         connesso = true;
-        logger.info("Connesso al server");
+        colorLogger.logInfo("Connesso al server");
     }
 
     // il thread di lettura riceve i messaggi dal server (HO APPORTATO ALCUNE MODIFICHE E HO LASCIATO LE VECCHIE COSE PERCHÈ
@@ -73,7 +71,7 @@ public class Client {
                 }
             } catch (IOException | ClassNotFoundException e) {
                 if (connesso) {
-                    logger.error("Errore nella ricezione dei messaggi: {}", e.getMessage(), e);
+                    colorLogger.logError("Errore nella ricezione dei messaggi " + e.getMessage());
                     disconnetti();
                 }
             }
@@ -96,9 +94,7 @@ public class Client {
                     controlloreGeneralUI.gestisciConversazioneFallito(messaggioErrore);
                 }
             }
-            case RichiestaRegistrazioneUtente ignored -> {
-                controlloreRegistrazione.gestisciRegistrazioneConSuccesso();
-            }
+            case RichiestaRegistrazioneUtente ignored -> controlloreRegistrazione.gestisciRegistrazioneConSuccesso();
             case Chat chat -> {
                 chatAttuale = chat;
 
@@ -108,7 +104,6 @@ public class Client {
                         if (utente != null && utente.getId() != 0) {
                             if (!utentiConosciuti.containsKey(utente.getId())) {
                                 utentiConosciuti.put(utente.getId(), utente);
-                                logger.info("Aggiunto utente dalla chat: {} (ID: {})", utente.getUsername(), utente.getId());
                             }
                         }
                     }
@@ -117,12 +112,10 @@ public class Client {
                 // Aggiorna l'interfaccia grafica con i nuovi messaggi
                 if (chatUI != null && chatUI.getIdConversazioneAttuale() == chatAttuale.getId()) {
                     List<Messaggio> messaggi = new ArrayList<>(chatAttuale.getMessaggi().values());
-                    logger.info("Ricevuti {} messaggi da mostrare nella UI", messaggi.size());
                     chatUI.aggiornaMessaggi(messaggi);
                 }
 
-                logger.info("Ricevuta chat con ID {} contenente {} messaggi",
-                        chatAttuale.getId(), chatAttuale.getMessaggi().size());
+                colorLogger.logInfo("Ricevuta chat con ID " + chatAttuale.getId() + " contenente " + chatAttuale.getMessaggi().size() + " messaggi");
             }
             case RichiestaConversazioni risposta -> {
                 if (controlloreGeneralUI != null) {
@@ -130,8 +123,6 @@ public class Client {
                 }
             }
             case RichiestaListaUtenti risposta -> {
-                logger.info("Ricevuta risposta richiestaListaUtenti con {} utenti",
-                        risposta.getUtenti() != null ? risposta.getUtenti().size() : 0);
 
                 if (controlloreGeneralUI != null) {
                     controlloreGeneralUI.gestisciListaUtentiConSuccesso(risposta);
@@ -144,15 +135,11 @@ public class Client {
             }
 
             case RichiestaMembriGruppo risposta -> {
-                logger.info("Ricevuta risposta con {} membri della chat",
-                        risposta.getMembri() != null ? risposta.getMembri().size() : 0);
                 if (chatUI != null) {
                     chatUI.gestisciMembriGruppoRicevuti(risposta.getMembri());
                 }
             }
-            default -> {
-                System.out.println("Client: l'oggetto ricevuto non è fra quelli che io gestisco");
-            }
+            default -> System.out.println("Client: l'oggetto ricevuto non è fra quelli che io gestisco");
         }
     }
 
@@ -174,17 +161,6 @@ public class Client {
         this.controlloreGeneralUI = controller;
     }
 
-    public void inviaMessaggio(Messaggio messaggio) {
-        try {
-            if (connesso) {
-                out.writeObject(messaggio);
-                out.flush();
-                logger.info("Messaggio inviato al server: {}", messaggio.getTesto());
-            }
-        } catch (IOException e) {
-            logger.error("Errore nell'invio del messaggio: {}", e.getMessage());
-        }
-    }
 
     public void inviaRichiestaAlServer(RichiestaGenerale richiesta) throws IOException, ClassNotFoundException {
         if (!connesso) {
@@ -193,7 +169,7 @@ public class Client {
 
         // se non sono entrato nell'if, mi sono connesso
         richiesta.inviaRichiesta(out);
-        logger.info("Richiesta inviata al server: {}", richiesta.getTipo());
+        colorLogger.logInfo("Richiesta inviata al server: " + richiesta.getTipo());
 
     }
 
@@ -204,9 +180,8 @@ public class Client {
             //chatAttuale = new Chat(idChat);
             out.writeObject(richiestaChat);
             out.flush();
-            logger.info("Attivata chat con ID: {}", idChat);
         } catch (IOException e) {
-            logger.error("Errore nell'attivazione della chat: {}", e.getMessage());
+            colorLogger.logError("Errore nella ricezione della chat: " + e.getMessage());
         }
     }
 
@@ -227,9 +202,9 @@ public class Client {
                 socket.close();
             }
             threadPool.shutdown();
-            logger.info("Disconnesso dal server");
+            colorLogger.logInfo("Disconnesso dal server");
         } catch (IOException e) {
-            logger.error("Errore durante la disconnessione: {}", e.getMessage());
+            colorLogger.logError("Errore durante la disconnessione: " + e.getMessage());
         }
     }
 
@@ -254,7 +229,6 @@ public class Client {
             if (altroUtente != null && altroUtente.getId() != 0) {
                 if (!utentiConosciuti.containsKey(altroUtente.getId())) {
                     utentiConosciuti.put(altroUtente.getId(), altroUtente);
-                    logger.info("Aggiunto utente conosciuto: {} (ID: {})", altroUtente.getUsername(), altroUtente.getId());
                 }
             }
         }
@@ -262,8 +236,6 @@ public class Client {
 
 
     public String getNomeMittente(Messaggio messaggio, HashMap<Integer, Utente> utentiConosciuti, int idUtenteLoggato) {
-        logger.info("Cercando mittente per ID: {}", messaggio.getId_mittente());
-        logger.info("Utenti conosciuti: {}", utentiConosciuti.keySet());
 
         if (messaggio.getId_mittente() == idUtenteLoggato) {
             return "Tu";
@@ -271,10 +243,9 @@ public class Client {
 
         Utente mittente = utentiConosciuti.get(messaggio.getId_mittente());
         if (mittente != null) {
-            logger.info("Trovato mittente: {}", mittente.getUsername());
             return mittente.getUsername();
         } else {
-            logger.warn("Nome mittente non trovato per ID: {}", messaggio.getId_mittente());
+            colorLogger.logError("Nome mittente non trovato non trovato" + messaggio.getId_mittente());
             return "Utente " + messaggio.getId_mittente();
         }
     }

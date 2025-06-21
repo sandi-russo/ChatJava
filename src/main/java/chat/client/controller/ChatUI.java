@@ -20,21 +20,15 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static chat.client.GestoreFeedbackUI.mostraErrore;
 
 public class ChatUI {
-    private static final Logger logger = LoggerFactory.getLogger(ChatUI.class);
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    ColorLogger colorLogger = new ColorLogger();
 
     @FXML
     private BorderPane PannelloPrincipale;
@@ -45,8 +39,6 @@ public class ChatUI {
     @FXML
     private Button btnInvio;
     @FXML
-    private Button btnMenu;
-    @FXML
     private ImageView chatAvatar;
     @FXML
     private Label chatNome;
@@ -55,16 +47,17 @@ public class ChatUI {
     private List<Messaggio> messaggiAttuali = new ArrayList<>();
     private chat.client.Client clientChat;
 
+    @FXML
     public void initialize() {
-        logger.info("Inizializzazione Interfaccia Grafica");
+        colorLogger.logInfo("Inizializzazione Interfaccia Grafica");
 
         this.clientChat = GestisciClient.getInstance().getClientChat();
 
-        // Nascondi il pannello all'inizio
+        // Nascondi il pannello all'inizio, ovvero, non mostrare nessuna chat
         if (PannelloPrincipale != null) {
             PannelloPrincipale.setVisible(false);
             PannelloPrincipale.managedProperty().bind(PannelloPrincipale.visibleProperty());
-            logger.info("Pannello chat inizialmente nascosto");
+            colorLogger.logInfo("Pannello chat inizialmente nascosto");
         }
 
         // Configurazione del bottone di invio
@@ -72,7 +65,7 @@ public class ChatUI {
             btnInvio.setOnAction(event -> inviaMessaggio());
         }
 
-        // Permette di inviare il messaggio premendo Enter
+        // mi permette di inviare il messaggio premendo invio quando sono all'interno della cella
         if (CellaMessaggio != null) {
             CellaMessaggio.setOnAction(event -> inviaMessaggio());
         }
@@ -82,9 +75,29 @@ public class ChatUI {
         }
     }
 
+    @FXML
+    public void ListaMembriGruppo() {
+        if (conversazioneAttuale == null) {
+            colorLogger.logError("Nessuna conversazione selezionata");
+            return;
+        }
+
+        try {
+            // Crea la richiesta per ottenere i membri della chat
+            RichiestaMembriGruppo richiesta = new RichiestaMembriGruppo(conversazioneAttuale.getIdChat());
+
+            // Invia la richiesta al server
+            clientChat.inviaRichiestaAlServer(richiesta);
+            colorLogger.logInfo("Inviata richiesta membri gruppo per chat ID: " + conversazioneAttuale.getIdChat());
+        } catch (Exception e) {
+            colorLogger.logError("Errore nell'invio della richiesta membri gruppo: " + e.getMessage());
+            mostraErrore("Impossibile ottenere i membri del gruppo");
+        }
+    }
+
     // configuro lo stile dei messaggi
     private void configuraCellFactory() {
-        ListaMessaggi.setCellFactory(param -> new ListCell<Messaggio>() {
+        ListaMessaggi.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(Messaggio messaggio, boolean empty) {
                 super.updateItem(messaggio, empty);
@@ -99,26 +112,26 @@ public class ChatUI {
                 VBox messaggioBox = new VBox(5);
                 messaggioBox.setPadding(new Insets(5, 10, 5, 10));
 
-                // Determina se il messaggio è stato inviato dall'utente corrente
+                // Determina se il messaggio è stato inviato dall'utente corrente, questo per applicare uno stile diverso in base a chi ha inviato il messaggio
                 boolean messaggioMio = utenteLoggato != null && messaggio.getId_mittente() == utenteLoggato.getId();
 
                 HBox intestazione = new HBox(10);
                 String nomeMittente = clientChat.getNomeMittente(messaggio, clientChat.getUtentiConosciuti(), utenteLoggato.getId());
 
-                System.out.println("Nome mittente: " + nomeMittente);
+               //  System.out.println("Nome mittente: " + nomeMittente);
                 Label mittente = new Label(nomeMittente);
-                mittente.setFont(Font.font("System", FontWeight.BOLD, 12));
+                mittente.setFont(Font.font("System", FontWeight.BOLD, 10));
 
                 String orario = messaggio.getOraFormattata();
                 Label timestamp = new Label(orario);
-                timestamp.setFont(Font.font("System", FontWeight.NORMAL, 10));
+                timestamp.setFont(Font.font("System", FontWeight.NORMAL, 8));
                 timestamp.setTextFill(Color.GRAY);
 
                 intestazione.getChildren().addAll(mittente, timestamp);
 
                 // Contenuto del messaggio
                 Text contenuto = new Text(messaggio.getTesto());
-                contenuto.setFont(Font.font("System", FontWeight.NORMAL, 14));
+                contenuto.setFont(Font.font("System", FontWeight.NORMAL, 12));
                 contenuto.setWrappingWidth(200);  // Imposta la larghezza massima del testo
 
                 // Aggiunge i componenti al container del messaggio
@@ -139,7 +152,7 @@ public class ChatUI {
         });
     }
 
-    // meotodo chiamato quando l'utente seleziona una chat
+    // metodo chiamato quando l'utente seleziona una chat
     public void mostraConversazione(Conversazione conversazione, Utente utente) {
         this.conversazioneAttuale = conversazione;
         this.utenteLoggato = utente;
@@ -156,7 +169,7 @@ public class ChatUI {
             // Aggiorna l'interfaccia con i dati della conversazione
             if (chatNome != null) {
                 chatNome.setText(conversazione.getNomeVisualizzato());
-                logger.info("Impostato titolo chat: {}", conversazione.getNomeVisualizzato());
+                colorLogger.logInfo("Impostato titolo chat: " + conversazione.getNomeVisualizzato());
             }
 
             // Gestisci l'avatar in base al tipo di chat
@@ -167,7 +180,6 @@ public class ChatUI {
                 if (isGruppo) {
                     // Se è un gruppo, nascondi l'avatar
                     chatAvatar.setOpacity(0.0);
-                    logger.info("Chat di gruppo: avatar nascosto");
                 } else {
                     // Se è una chat privata, mostra l'avatar dell'altro utente se disponibile
                     chatAvatar.setOpacity(1.0);
@@ -177,11 +189,9 @@ public class ChatUI {
                         if (fileAvatar.exists()) {
                             Image avatar = new Image(fileAvatar.toURI().toString());
                             chatAvatar.setImage(avatar);
-                            logger.info("Impostato avatar per chat privata");
                         } else {
                             // Se il file non esiste, puoi impostare un'immagine predefinita
-                            // chatAvatar.setImage(new Image("/path/to/default-avatar.png"));
-                            logger.warn("File avatar non trovato: {}", conversazione.getAltroUtente().getAvatar());
+                            colorLogger.logError("File avatar non trovato: " + conversazione.getAltroUtente().getAvatar());
                         }
                     }
                 }
@@ -190,40 +200,20 @@ public class ChatUI {
             // Pulisce i messaggi vecchi
             if (ListaMessaggi != null) {
                 ListaMessaggi.getItems().clear();
-                logger.debug("Lista messaggi pulita");
+                colorLogger.logDebug("Lista messaggi pulita");
             }
 
             if (PannelloPrincipale != null) {
                 PannelloPrincipale.setVisible(true); // Mostra il pannello chat
             }
-            logger.info("Mostrata conversazione: {}", conversazione.getNomeVisualizzato());
+            colorLogger.logInfo("Mostrata conversazione: " + conversazione.getNomeVisualizzato());
         });
     }
 
     // Metodo di supporto per determinare se una conversazione è di gruppo
     private boolean isGruppoChat(Conversazione conversazione) {
-        // Potresti avere vari modi per determinare se è un gruppo:
-
-        // 1. Se nella classe Conversazione hai un campo isGroup, usa quello
-        // if (conversazione.isGroup()) return true;
-
-        // 2. Se l'ID dell'altro utente è 0 (come sembra dal codice che hai mostrato)
-        if (conversazione.getAltroUtente() != null && conversazione.getAltroUtente().getId() == 0) {
-            return true;
-        }
-
-        // 3. Basandoti sul nome della conversazione (se inizia con "Gruppo" o contiene più nomi)
-        String nome = conversazione.getNomeVisualizzato();
-        if (nome != null && (nome.startsWith("Gruppo") || nome.contains(", "))) {
-            return true;
-        }
-
-        // 4. Se la conversazione ha più di due membri (te e un altro utente)
-        // if (conversazione.getMembri() != null && conversazione.getMembri().size() > 2) {
-        //     return true;
-        // }
-
-        return false;
+        // se l'ID dell'altro utente è zero, allora è un gruppo
+        return conversazione.getAltroUtente() != null && conversazione.getAltroUtente().getId() == 0;
     }
 
     private void inviaMessaggio() {
@@ -239,44 +229,24 @@ public class ChatUI {
                 messaggiAttuali.add(messaggio);
                 aggiornaMessaggi(messaggiAttuali);
 
-                // Invia il messaggio tramite il client di rete
-                /*
-                if (clientChat != null) {
-                    clientChat.inviaMessaggio(messaggio);
-
-                    logger.info("Messaggio inviato: {}", messaggio.getTesto());
-                } else {
-                    logger.error("Cliente di rete non inizializzato");
-                }
-                */
-
-                // Invece del messaggio, invio una RichiestaMessaggio
                 if (clientChat != null) {
                     RichiestaMessaggio richiesta = new RichiestaMessaggio(messaggio);
                     clientChat.inviaRichiestaAlServer(richiesta);
-                    logger.info("Messaggio inviato: {}", messaggio.getTesto());
+                    colorLogger.logInfo("Messaggio inviato: " + messaggio.getTesto());
                 } else {
-                    logger.error("Cliente di rete non inizializzato");
+                    colorLogger.logError("Cliente di rete non inizializzato");
                 }
-
 
                 CellaMessaggio.clear(); // Pulisce il campo di input
             } catch (Exception e) {
-                logger.error("Errore nell'invio del messaggio: {}", e.getMessage(), e);
+                colorLogger.logError("Errore nell'invio del messaggio: " + e.getMessage());
             }
         }
     }
 
-    // creaChat()
-    // -L'utente crea una chat, se sceglie di farla con una sola persona allora è privata con quell'utente. Altrimenti è di gruppo
-    // -
-
-    // aggiungiPersonaAChat()
-
-
     public void aggiornaMessaggi(List<Messaggio> messaggi) {
         if (ListaMessaggi == null) {
-            logger.error("Lista messaggi non disponibile");
+            colorLogger.logError("Lista messaggi non disponibile");
             return;
         }
         // utilizzo runLater per mettere l'attività in coda ed eseguirla appena possibile
@@ -285,53 +255,20 @@ public class ChatUI {
                 ListaMessaggi.getItems().clear();
                 messaggiAttuali = new ArrayList<>(messaggi);
                 ListaMessaggi.getItems().addAll(messaggi);
-                logger.info("Aggiornati {} messaggi nella lista", messaggi.size());
+                colorLogger.logInfo("Aggiornati " + messaggi.size() + " messaggi nella lista");
 
                 // Scorre automaticamente alla fine per mostrare l'ultimo messaggio
                 if (!messaggi.isEmpty()) {
                     ListaMessaggi.scrollTo(messaggi.size() - 1);
                 }
             } catch (Exception e) {
-                logger.error("Errore durante l'aggiornamento dei messaggi: {}", e.getMessage(), e);
+                colorLogger.logError("Errore durante l'aggiornamento dei messaggi: " + e.getMessage());
             }
         });
     }
 
-    // Per usare questa funzione dobbiamo prima fare la query e collegare tutto ciò che parte
-    // da: riga 388 del Clienthanlder. Ci sono diversi commenti di cose che vanno implementate, tra cui
-    // la query.
-    // Inoltre forse va anche messo qualcosa nel Client per farlo funzionare.
-    public void caricaChat(List<Chat> chats) {
-        messaggiAttuali.clear(); // pulisci i messaggi attuali prima di caricare nuovi
 
-        for (Chat chat : chats) {
-            for (Messaggio messaggio : chat.getMessaggi().values()) {
-                messaggiAttuali.add(messaggio);
-            }
-        }
 
-        aggiornaMessaggi(messaggiAttuali);
-    }
-
-    @FXML
-    public void ListaMembriGruppo() {
-        if (conversazioneAttuale == null) {
-            logger.warn("Nessuna conversazione selezionata");
-            return;
-        }
-
-        try {
-            // Crea la richiesta per ottenere i membri della chat
-            RichiestaMembriGruppo richiesta = new RichiestaMembriGruppo(conversazioneAttuale.getIdChat());
-
-            // Invia la richiesta al server
-            clientChat.inviaRichiestaAlServer(richiesta);
-            logger.info("Inviata richiesta membri gruppo per chat ID: {}", conversazioneAttuale.getIdChat());
-        } catch (Exception e) {
-            logger.error("Errore nell'invio della richiesta membri gruppo: {}", e.getMessage(), e);
-            mostraErrore("Impossibile ottenere i membri del gruppo");
-        }
-    }
 
     public void gestisciMembriGruppoRicevuti(List<Utente> membri) {
         Platform.runLater(() -> {
@@ -368,7 +305,7 @@ public class ChatUI {
                 dialog.showAndWait();
 
             } catch (Exception e) {
-                logger.error("Errore nella visualizzazione dei membri: {}", e.getMessage(), e);
+                colorLogger.logError("Errore nella visualizzazione dei membri: " + e.getMessage());
                 mostraErrore("Errore nella visualizzazione dei membri");
             }
         });
@@ -391,4 +328,5 @@ public class ChatUI {
     public int getIdConversazioneAttuale() {
         return conversazioneAttuale != null ? conversazioneAttuale.getIdChat() : -1;
     }
+
 }

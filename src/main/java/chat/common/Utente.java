@@ -49,17 +49,10 @@ public class Utente implements Serializable {
         return cognome;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
     public String getAvatar() {
         return avatar;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 
     public void setUsername(String username) {
         this.username = username;
@@ -68,10 +61,6 @@ public class Utente implements Serializable {
     @Override
     public String toString() {
         return username + " (" + nome + " " + cognome + ")";
-    }
-
-    public void printlnAllDatiUtente(){
-        System.out.println("id: " + this.id + " username:" + this.username + "nome: " + this.nome + " cognome: " + this.cognome + " email: " + this.email + " avatar: " + this.avatar);
     }
 
 }

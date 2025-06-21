@@ -1,7 +1,6 @@
 package chat.common;
 
 import java.io.Serializable;
-import java.util.List;
 
 // Questa classe la utilizzo solamente per contenere i dati di una singola conversazione da mostrare nella lista
 public class Conversazione implements Serializable {
@@ -28,11 +27,6 @@ public class Conversazione implements Serializable {
     public Utente getAltroUtente() {
         return altroUtente;
     }
-
-    public void setAltroUtente(Utente altroUtente) {
-        this.altroUtente = altroUtente;
-    }
-
 
     // questo metodo lo sfrutta la ListView per mostrare i nomi nella lista
     @Override

@@ -1,6 +1,7 @@
 package chat.client.controller;
 
 import chat.client.Client;
+import chat.common.ColorLogger;
 import chat.common.Utente;
 import chat.richieste.RichiestaListaUtenti;
 import chat.richieste.RichiestaNuovaChat;
@@ -12,9 +13,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,28 +21,18 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class NuovaChatDialog {
-    private static final Logger logger = LoggerFactory.getLogger(NuovaChatDialog.class);
+    ColorLogger colorLogger = new ColorLogger();
 
     @FXML
     private TextField campoRicercaUtenti;
-
     @FXML
     private CheckBox checkboxGruppo;
-
     @FXML
     private TextField campoNomeGruppo;
-
     @FXML
     private ListView<Utente> listaUtenti;
-
     @FXML
     private Label labelFeedback;
-
-    @FXML
-    private Button btnAnnulla;
-
-    @FXML
-    private Button btnCrea;
 
     private Client client;
     private Utente utenteLoggato;
@@ -152,6 +140,70 @@ public class NuovaChatDialog {
         });
     }
 
+
+
+    @FXML
+    private void annulla() {
+        dialogStage.close();
+    }
+
+    @FXML
+    private void creaNuovaChat() {
+        // Ottieni gli utenti selezionati
+        List<Utente> selezionati = utentiSelezionati.entrySet().stream()
+                .filter(Map.Entry::getValue)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        // Verifica se ci sono utenti selezionati
+        if (selezionati.isEmpty()) {
+            labelFeedback.setText("Seleziona almeno un utente");
+            labelFeedback.setStyle("-fx-text-fill: red;");
+            return;
+        }
+
+        boolean isGruppo = checkboxGruppo.isSelected();
+
+        // Se è un gruppo, verifica se ci sono almeno due utenti selezionati
+        if (isGruppo && selezionati.size() < 2) {
+            labelFeedback.setText("Per un gruppo seleziona almeno 2 utenti");
+            labelFeedback.setStyle("-fx-text-fill: red;");
+            return;
+        }
+
+        // Se è un gruppo, verifica che sia stato specificato un nome
+        String nomeGruppo = null;
+        if (isGruppo) {
+            nomeGruppo = campoNomeGruppo.getText().trim();
+            if (nomeGruppo.isEmpty()) {
+                labelFeedback.setText("Inserisci un nome per il gruppo");
+                labelFeedback.setStyle("-fx-text-fill: red;");
+                return;
+            }
+        }
+
+        try {
+            // Crea la lista degli ID degli utenti selezionati
+            List<Integer> idUtenti = new ArrayList<>();
+            for (Utente utente : selezionati) {
+                idUtenti.add(utente.getId());
+            }
+
+            // Crea la richiesta
+            RichiestaNuovaChat richiesta = new RichiestaNuovaChat(idUtenti, utenteLoggato.getId(), isGruppo, nomeGruppo);
+
+            // Invia la richiesta al server
+            client.inviaRichiestaAlServer(richiesta);
+
+            // Chiudi la finestra di dialogo
+            dialogStage.close();
+        } catch (IOException | ClassNotFoundException e) {
+            colorLogger.logError("Errore nella creazione della nuova chat: " + e.getMessage());
+            labelFeedback.setText("Errore nella creazione della chat");
+            labelFeedback.setStyle("-fx-text-fill: red;");
+        }
+    }
+
     private int getNumeroUtentiSelezionati() {
         int count = 0;
         for (Boolean selected : utentiSelezionati.values()) {
@@ -178,7 +230,7 @@ public class NuovaChatDialog {
             RichiestaListaUtenti richiesta = new RichiestaListaUtenti("");
             client.inviaRichiestaAlServer(richiesta);
         } catch (IOException | ClassNotFoundException e) {
-            logger.error("Errore nella richiesta della lista utenti: {}", e.getMessage());
+            colorLogger.logError("Errore nella richiesta della lista utenti: " + e.getMessage());
             labelFeedback.setText("Errore nel caricamento degli utenti");
             labelFeedback.setStyle("-fx-text-fill: red;");
         }
@@ -221,65 +273,4 @@ public class NuovaChatDialog {
         listaUtenti.setItems(utentiFiltrati);
     }
 
-    @FXML
-    private void annulla() {
-        dialogStage.close();
-    }
-
-    @FXML
-    private void creaNuovaChat() {
-        // Ottieni gli utenti selezionati
-        List<Utente> selezionati = utentiSelezionati.entrySet().stream()
-                .filter(Map.Entry::getValue)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-
-        // Verifica se ci sono utenti selezionati
-        if (selezionati.isEmpty()) {
-            labelFeedback.setText("Seleziona almeno un utente");
-            labelFeedback.setStyle("-fx-text-fill: red;");
-            return;
-        }
-
-        boolean isGruppo = checkboxGruppo.isSelected();
-
-        // Se è un gruppo, verifica se ci sono almeno 2 utenti selezionati
-        if (isGruppo && selezionati.size() < 2) {
-            labelFeedback.setText("Per un gruppo seleziona almeno 2 utenti");
-            labelFeedback.setStyle("-fx-text-fill: red;");
-            return;
-        }
-
-        // Se è un gruppo, verifica che sia stato specificato un nome
-        String nomeGruppo = null;
-        if (isGruppo) {
-            nomeGruppo = campoNomeGruppo.getText().trim();
-            if (nomeGruppo.isEmpty()) {
-                labelFeedback.setText("Inserisci un nome per il gruppo");
-                labelFeedback.setStyle("-fx-text-fill: red;");
-                return;
-            }
-        }
-
-        try {
-            // Crea la lista degli ID degli utenti selezionati
-            List<Integer> idUtenti = new ArrayList<>();
-            for (Utente utente : selezionati) {
-                idUtenti.add(utente.getId());
-            }
-
-            // Crea la richiesta
-            RichiestaNuovaChat richiesta = new RichiestaNuovaChat(idUtenti, utenteLoggato.getId(), isGruppo, nomeGruppo);
-
-            // Invia la richiesta al server
-            client.inviaRichiestaAlServer(richiesta);
-
-            // Chiudi la finestra di dialogo
-            dialogStage.close();
-        } catch (IOException | ClassNotFoundException e) {
-            logger.error("Errore nella creazione della nuova chat: {}", e.getMessage());
-            labelFeedback.setText("Errore nella creazione della chat");
-            labelFeedback.setStyle("-fx-text-fill: red;");
-        }
-    }
 }

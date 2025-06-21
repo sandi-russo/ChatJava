@@ -8,6 +8,9 @@ module com.example.chat {
 
     exports chat.utils;
     exports chat.client;
+    exports chat.common;
+    exports chat.server;
+    exports chat.richieste;
     opens chat.utils to javafx.fxml;
     exports chat.client.controller;
     opens chat.client.controller to javafx.fxml;

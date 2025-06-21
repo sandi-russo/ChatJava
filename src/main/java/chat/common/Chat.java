@@ -1,7 +1,6 @@
 package chat.common;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -52,15 +51,6 @@ public class Chat implements Serializable {
 
     public int getId() {
         return id;
-    }
-
-    public void stampaMessaggi() {
-        for (Map.Entry<Integer, Messaggio> entry : messaggi.entrySet()) {
-            Messaggio msg = entry.getValue();
-            System.out.println("[" + msg.getOraFormattata() + "] " +
-                    msg.getId_mittente() + ": " +  // *1 PROBLEMA
-                    msg.getTesto());
-        }
     }
 
     public boolean hashmapUtentiContieneUtente(int utenteDaVerificare) {

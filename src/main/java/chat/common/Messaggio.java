@@ -61,10 +61,6 @@ public class Messaggio implements Serializable {
         return testo;
     }
 
-    public Instant getOra() {
-        return ora;
-    }
-
     // la utilizzo per stampare l'ora nel messaggio nel formato ora:minuti:secondi
     public String getOraFormattata() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy - HH:mm").withZone(ZoneId.systemDefault());

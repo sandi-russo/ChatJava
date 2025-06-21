@@ -38,37 +38,3 @@ public class GestisciClient {
       this.utenteLoggato = utenteLoggato;
    }
 }
-
-/*
-package chat.client.controller;
-
-import chat.client.Client;
-import chat.common.Utente;
-
-// Questa classe ha le informazione sul client: l'utenteLoggato e il client stesso
-public class GestisciClient {
-
-   private Client clientChat;
-   private Utente utenteLoggato;
-
-   public GestisciClient(){
-      this.clientChat = new Client(this);
-   }
-
-   public Client getClientChat() {
-      return clientChat;
-   }
-
-   public Utente getUtenteLoggato() {
-      return utenteLoggato;
-   }
-
-   public void setClientChat(Client clientChat) {
-      this.clientChat = clientChat;
-   }
-
-   public void setUtenteLoggato(Utente utenteLoggato) {
-      this.utenteLoggato = utenteLoggato;
-   }
-}
-*/

@@ -1,6 +1,5 @@
 package chat.server;
 
-import chat.client.controller.Registrazione;
 import chat.common.*;
 import chat.db.MySQLManager;
 import chat.richieste.*;
@@ -18,16 +17,12 @@ import chat.db.GestioneChat;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import chat.db.GestioneUtente;
 import chat.utils.XMLConfigLoaderDB;
 import javafx.collections.ObservableList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 public class ClientHandler implements Runnable {
 
@@ -49,7 +44,7 @@ public class ClientHandler implements Runnable {
 
     private File fileAvatarSelezionato; // lo utilizzo per salvare il file scelto dall'utente
 
-    private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
+    ColorLogger colorLogger = new ColorLogger();
 
     public ClientHandler(Socket socket, ConcurrentHashMap<Integer, Chat> chatsRef, List<ClientHandler> clientHandlersRef) throws IOException {
         out = new ObjectOutputStream(socket.getOutputStream());
@@ -112,64 +107,6 @@ public class ClientHandler implements Runnable {
                 RichiestaGenerale richiesta = messaggioRicevuto();
                 elaboraRichiesta(richiesta);
 
-
-                // messaggioRicevuto();
-                // richiestaChat();
-
-                // TUTTA QUESTA PARTE DOPO VA MESSO NELLO SWITCH CASE
-
-//                if (oggettoRicevuto instanceof Chat) {
-//                    // questo diventa una richiesta di tipo inviaChatUtente, deve funzionare con ciò che c'è nel db
-//
-//                    // POI IL CLIENT INVIA LA CHAT, LA LEGGIAMO (non sappiamo farci gli affari nostri)
-//                    Chat chatIniziale = (Chat) oggettoRicevuto;
-//
-//                    // ABBIAMO LETTO L'ID, LO DOBBIAMO SALVARE
-//                    this.activeChatID = chatIniziale.getId(); // ORA IL CLIENTHANDLER SA QUAL È L'UTENTE "ATTIVO"
-//
-//                    System.out.printf("Utente %d: %s connesso. Chat iniziale attiva %d\n", idUtente, utenteConnesso.getId(), activeChatID);
-//                // richiestaMessaggio();
-//                } else if (oggettoRicevuto instanceof Messaggio) {
-//                    // richiesta di tipo messaggioRicevuto, una volta ricevuta fa tutta questa parte ma in una funzione
-//
-//                    Messaggio nuovoMessaggio = (Messaggio) oggettoRicevuto;
-//
-//                    // SE RICEVO UN NUOVO MESSAGGIO CONTROLLO SE QUESTA CHAT ESISTE, IN CASO NEGATIVO, LA CREO
-//                    // USEREMO LA FUNZIONE comuteIfAbsent perchè è nettamente più sicuro e "thread-safe"
-//                    chats.computeIfAbsent(nuovoMessaggio.getId_chat_destinataria(), chatID -> {
-//                        System.out.printf("La chatID ", chatID + " non esiste. La sto creando.");
-//                        return creaChatPerUtente(utenteConnesso, chatID);
-//                    });
-//
-//                    // A QUESTO PUNTO, LA CHAT È STATA SICURAMENTE CREATA
-//                    // UNA VOLTA CHE ARRIVA UN MESSAGGIO DA UN UTENTE VIENE PRESA QUELLA CHAT DALLA LISTA CHATS
-//                    Chat chatDaModificare = chats.get(nuovoMessaggio.getId_chat_destinataria());
-//                    System.out.println("L'id della chat scelta è: " + chatDaModificare.getId());
-//
-//                    /* LA CHAT CHE ABBIAMO PRESO È UN **RIFERIMENTO** ALLA CHAT DENTRO CHATS, QUINDI NON SERVE RIMETTERE LA CHAT NELLA MAPPA, PERCHÈ
-//                     * CONCURRENTHASHMAP CONTIENE UN RIFERIMENTO ALL'OGGETTO, **NON** UNA COPIA */
-//
-//                    // AGGIUNGIAMO L'UTENTE ALLA CHAT SE PER QUALCHE MOTIVO NON FOSSE GIÀ PRESENTE
-//                    if (!chatDaModificare.hashmapUtentiContieneUtente(nuovoMessaggio.getId_mittente())) {
-//                        chatDaModificare.aggiungiUtente(utenteConnesso);
-//                    }
-//
-//                    // IL MESSAGGIO CHE È APPENA ARRIVATO VIENE AGGIUNTO ALLA CHAT
-//                    chatDaModificare.aggiungiMessaggio(nuovoMessaggio);
-//
-//                    // ADESSO PENSIAMO ALL'INOLTRO
-//                    // IL SERVER SI SCORRE TUTTI LA LISTA DI TUTTI GLI UTENTI CHE SONO CONNESSI E CONTROLLA A CHI MANDARE IL MESSAGGIO
-//
-//                    for (ClientHandler clientHandler : clientHandlers) {
-//                        if (clientHandler.activeChatID == chatDaModificare.getId()) {
-//                            System.out.printf("Invio aggiornamento della chat %d al client dell'utente %d.\n", chatDaModificare.getId(), clientHandler.getIdUtente());
-//                            clientHandler.inviaChatAggiornata(chatDaModificare);
-//                            // Qui,salva i messaggi nel db facendo una query:
-//                            // -INSERT INTO messaggii VALUES *tutte le info del messaggio appena mandato con il contenuto, l'id della chat a cui è destinato, il mittente, il tipo di messaggio (che sarà solo stringa in questa funzione credo), l'ora a cui è stato mandato*
-//                            //
-//                        }
-//                    }
-//                }
             }
         } catch (IOException | ClassNotFoundException e) {
             System.out.println("Il client " + idUtente + " si è disconnesso o si è verificato un errore " + e.getMessage());
@@ -188,7 +125,7 @@ public class ClientHandler implements Runnable {
             out.writeObject(chat);
             out.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            colorLogger.logError(e.getMessage());
         }
     }
 
@@ -236,7 +173,6 @@ public class ClientHandler implements Runnable {
                 // ABBIAMO LETTO L'ID, LO DOBBIAMO SALVARE
                 //this.activeChatID = chatIniziale.getId();  // ORA IL CLIENTHANDLER SA QUAL È L'UTENTE "ATTIVO"
                 this.activeChatID = richiestaChat.getIdChat();
-                logger.info("Utente {}: {} connesso. Chat iniziale attiva {}", idUtente, utenteConnesso.getId(), activeChatID);
 
                 System.out.printf("Utente %d: %s connesso. Chat iniziale attiva %d\n", idUtente, utenteConnesso.getId(), activeChatID);
                 break;
@@ -317,7 +253,6 @@ public class ClientHandler implements Runnable {
                 break;
 
             case richiestaListaUtenti:
-                logger.info("Elaborazione richiesta lista utenti");
                 RichiestaListaUtenti richiestaListaUtenti = (RichiestaListaUtenti) richiesta;
                 gestisciRichiestaListaUtenti(richiestaListaUtenti);
                 break;
@@ -367,8 +302,13 @@ public class ClientHandler implements Runnable {
         GestioneUtente gestioneUtente = new GestioneUtente(dbManager);
         Path cartellaDest = Paths.get("dati_server/avatar");
 
-        try { Files.createDirectories(cartellaDest); }
-        catch (IOException e) { logger.error("Errore cartella avatar", e); inviaRisposta("Errore server"); return; }
+        try {
+            Files.createDirectories(cartellaDest);
+        } catch (IOException e) {
+            colorLogger.logError("Errore cartella avatar" + e.getMessage());
+            inviaRisposta("Errore server");
+            return;
+        }
 
         String percorsoAvatarDaSalvare = null;
 
@@ -380,7 +320,9 @@ public class ClientHandler implements Runnable {
                 Path destinazione = cartellaDest.resolve(nomeFile);
                 Files.write(destinazione, richiesta.getAvatarBytes());
                 percorsoAvatarDaSalvare = destinazione.toString();
-            } catch (IOException e) { logger.error("Errore salvataggio avatar", e); }
+            } catch (IOException e) {
+                colorLogger.logError("Errore salvataggio avatar" + e.getMessage());
+            }
         }
 
         if (percorsoAvatarDaSalvare == null)
@@ -397,38 +339,27 @@ public class ClientHandler implements Runnable {
             );
             inviaRisposta(new RichiestaRegistrazioneUtente());
         } catch (SQLException | GestioneUtente.UserRegistrationException e) {
-            logger.error("Errore registrazione utente", e);
+            colorLogger.logError("Errore registrazione utente" + e.getMessage());
             inviaRisposta("Errore registrazione");
         }
     }
 
 
-
     private void gestisciConversazioni(RichiestaConversazioni richiesta) {
         GestioneChat gestioneChat = new GestioneChat(dbManager);
         int idUtenteRichiedente = richiesta.getIdUtenteRichiedente(); // Ottieni l'ID dalla richiesta
-        logger.info("ClientHandler: Richiesta conversazioni per l'utente ID: {}", idUtenteRichiedente); // Logga l'ID
-
         try {
 
-            logger.info("ID utente " + idUtente);
             ObservableList<Conversazione> conversazioniObservable = gestioneChat.getConversazioniPerUtente(idUtenteRichiedente);
             // chatObservable = gestioneChat.getChatPerUtente(idUtenteRichiedente);
-            logger.info("ClientHandler: Trovate {} conversazioni dal database per l'utente ID {}", conversazioniObservable.size(), idUtente);
 
             // converto l'observable in un arraylist
             List<Conversazione> conversazioniList = new ArrayList<>(conversazioniObservable);
             //List<Conversazione> chatList = new ArrayList<>(chatObservable);
+            colorLogger.logInfo("Trovate " + conversazioniList.size() + " conversazioni per l'utente con ID " + idUtenteRichiedente);
 
-            logger.info("ClientHandler: Trovate {} conversazioni dal database per l'utente ID {}",
-                    conversazioniList.size(), idUtenteRichiedente);
-            logger.info("ClientHandler: Lista serializzabile creata con {} elementi.", conversazioniList.size());
-
-
-            // inviaRisposta(conversazioni);
             // Forse queste richieste è meglio cambiarle in "risposte" per non confondere tutto...
             RichiestaConversazioni risposta = new RichiestaConversazioni(conversazioniList);
-            //RichiestaConversazioni risposta = new RichiestaConversazioni(conversazioniList, chatList);
             inviaRisposta(risposta);
         } catch (SQLException e) {
             inviaRisposta("Errore nel ritorno delle conversazioni");
@@ -471,7 +402,7 @@ public class ClientHandler implements Runnable {
 
     private void salvaMessaggioNelDB(Messaggio messaggio) throws SQLException {
         if (messaggio == null || messaggio.getTesto() == null || messaggio.getTesto().isEmpty()) {
-            logger.warn("Tentativo di salvare un messaggio vuoto o nullo nel database");
+            colorLogger.logError("Tentativo di salvare un messaggio vuoto o nullo nel database");
             return;
         }
 
@@ -487,30 +418,27 @@ public class ClientHandler implements Runnable {
 
             int righeInserite = stmt.executeUpdate();
             if (righeInserite > 0) {
-                logger.info("Messaggio salvato nel database con successo. Chat ID: {}, Mittente: {}",
-                        messaggio.getId_chat_destinataria(), messaggio.getId_mittente());
+                colorLogger.logInfo("Messaggio salvato nel DB con successo");
             } else {
-                logger.warn("Nessuna riga inserita durante il salvataggio del messaggio");
+                colorLogger.logError("Nessuna riga inserita");
             }
         } catch (SQLException e) {
-            logger.error("Errore durante il salvataggio del messaggio nel database: {}", e.getMessage());
+            colorLogger.logError("Errore durante il salvataggio del messaggio nel database " + e.getMessage());
             throw e;
         }
     }
 
 
     private void gestisciRichiestaListaUtenti(RichiestaListaUtenti richiesta) {
-        logger.info("Gestione richiesta lista utenti");
         try {
             GestioneUtente gestioneUtente = new GestioneUtente(dbManager);
             List<Utente> utenti = gestioneUtente.getListaUtenti(richiesta.getFiltroRicerca());
-            logger.info("Trovati {} utenti da inviare al client", utenti.size());
 
             // Crea la risposta
             RichiestaListaUtenti risposta = new RichiestaListaUtenti(utenti);
             inviaRisposta(risposta);
         } catch (SQLException e) {
-            logger.error("Errore nel recupero della lista utenti: {}", e.getMessage(), e);
+            colorLogger.logError("Errore nel recupero della lista utenti: " + e.getMessage());
             inviaRisposta("Errore nel recupero della lista utenti");
         }
     }
@@ -523,18 +451,16 @@ public class ClientHandler implements Runnable {
             // Crea la nuova chat nel database con il nome del gruppo se applicabile
 
             // Questa parte di codice serve a non far creare all'utente una chat privata tra due utenti che esiste già
-            if((richiesta.getIdUtenti().size()) == 1 && richiesta.isGruppo() == false){
+            if ((richiesta.getIdUtenti().size()) == 1 && richiesta.isGruppo() == false) {
                 //fai query per capire se nel result set c'è almeno un risultato. Se c'è già un risultato nel resultset
                 //allora NON DEVI CREARE LA CHAT. Altrimenti esce dall'if e crea la chat.
-                if(gestioneChat.trovaChatPrivata(richiesta.getIdUtenti().getFirst(), richiesta.getIdCreatore()) != null){
-                    logger.info("La chat tra i due utenti esiste già");
+                if (gestioneChat.trovaChatPrivata(richiesta.getIdUtenti().getFirst(), richiesta.getIdCreatore()) != null) {
+                    colorLogger.logInfo("La chat tra i due utenti è già esistente");
                     return;
                 }
             }
 
-
             int idChat = gestioneChat.creaNuovaChat(richiesta.isGruppo(), richiesta.getNomeGruppo());
-
             // Aggiungi l'utente creatore
             gestioneChat.aggiungiUtenteAChat(idChat, richiesta.getIdCreatore());
 
@@ -551,7 +477,7 @@ public class ClientHandler implements Runnable {
             inviaRisposta(risposta);
 
         } catch (SQLException e) {
-            logger.error("Errore nella creazione della nuova chat: {}", e.getMessage());
+            colorLogger.logError("Errore nella creazione della nuova chat " + e.getMessage());
             throw e;
         }
     }
@@ -563,20 +489,14 @@ public class ClientHandler implements Runnable {
 
             // Ottieni i membri della chat dal database
             List<Utente> utenti = gestioneChat.getUtentiPerChat(idChat);
-            logger.info("Trovati {} membri per la chat ID: {}", utenti.size(), idChat);
 
             // Crea e invia la risposta
             RichiestaMembriGruppo risposta = new RichiestaMembriGruppo(utenti);
             inviaRisposta(risposta);
 
         } catch (SQLException e) {
-            logger.error("Errore nel recupero dei membri della chat: {}", e.getMessage(), e);
+            colorLogger.logError("Errore nel recupero dei membri della chat " + e.getMessage());
             inviaRisposta("Errore nel recupero dei membri della chat");
         }
     }
-
 }
-
-
-
-

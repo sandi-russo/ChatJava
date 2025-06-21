@@ -1,8 +1,7 @@
 package chat.client.controller;
 
-import chat.client.Client;
 import chat.client.Main;
-import chat.common.Utente;
+import chat.common.ColorLogger;
 import chat.db.GestioneUtente;
 import chat.richieste.RichiestaRegistrazioneUtente;
 import javafx.application.Platform;
@@ -14,14 +13,13 @@ import chat.client.GestoreFeedbackUI;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
-import org.slf4j.Logger; // Lo utilizzo per avere un controllo sugli errori più approfondito rispetto a printStackTrace che è più generico
-import org.slf4j.LoggerFactory;
+
 
 import java.io.File;
 import java.io.IOException;
 
 public class Registrazione {
-    private static final Logger logger = LoggerFactory.getLogger(Registrazione.class); // Logger per gli errori
+    ColorLogger colorLogger = new ColorLogger();
     @FXML
     private TextField usernameField;
     @FXML
@@ -52,13 +50,12 @@ public class Registrazione {
             //XMLConfigLoaderDB.DBConfig config = XMLConfigLoaderDB.caricaConfigurazione("server.config.xml");
             //MySQLManager dbManager = new MySQLManager(config.ip, config.porta, config.nomeDB, config.username, config.password);
             // usare RichiestaGestioneUtente (esiste già in login se l'hai già implementata.
-            // this.gestioneUtente = new GestioneUtente(dbManager);
             // diventa: this.gestioneUtente = RichiestaGestioneUtente();
             this.clientChat = GestisciClient.getInstance().getClientChat();
             clientChat.setControlloreRegistrazione(this);
             // AGGIUSTARE = feedbackLabel.setText("");
         } catch (Exception e) {     // Il primo parametro è un messaggio descrittivo, il secondo è l'eccezione stessa.
-            logger.error("Errore critico durante l'inizializzazione del controller di registrazione", e);
+            colorLogger.logError("Errore critico durante l'inizializzazione del controller di registrazione" + e);
             GestoreFeedbackUI.mostraErrore(feedbackLabel, "Errore critico di configurazione.");
         }
     }
@@ -94,7 +91,6 @@ public class Registrazione {
             GestoreFeedbackUI.mostraErrore(feedbackLabel, "Username, Email e Password sono campi obbligatori!");
             return;
         }
-
 
         // Prendere l'avatar selezionato dall'utente.
         RichiestaRegistrazioneUtente richiesta = new RichiestaRegistrazioneUtente(username, nome, cognome, email, password, fileAvatarSelezionato);
@@ -141,30 +137,30 @@ public class Registrazione {
 
     }
 
-    public void gestisciRegistrazioneConSuccesso (){
-        Platform.runLater(()-> {
+    @FXML
+    private void vaiAlLogin () throws IOException {
+        Main.getInstance().navigateTo("Login.fxml");
+    }
+
+    public void gestisciRegistrazioneConSuccesso() {
+        Platform.runLater(() -> {
             try {
                 GestoreFeedbackUI.mostraSuccesso(feedbackLabel, "Registrazione riuscita!");
 
                 // se sono qui, la registrazione è riuscita e posso caricare la schermata di login
                 vaiAlLogin();
             } catch (IOException e) {
-                logger.error("Impossibile caricare la schermata principale");
+                colorLogger.logError("Impossibile caricare la schermata principale");
             }
         });
     }
 
     // qui creo la versione per un login fallito, essendo fallito, passerò l'oggetto String con un messaggio e non l'oggetto Utente
-    public void gestisciRegistrazioneFallita (String messsaggioErrore){
-        Platform.runLater(()-> {
+    public void gestisciRegistrazioneFallita(String messsaggioErrore) {
+        Platform.runLater(() -> {
             GestoreFeedbackUI.mostraErrore(feedbackLabel, messsaggioErrore);
         });
     }
 
 
-
-@FXML
-private void vaiAlLogin() throws IOException {
-    Main.getInstance().navigateTo("Login.fxml");
-}
 }

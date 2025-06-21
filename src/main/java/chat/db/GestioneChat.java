@@ -1,12 +1,11 @@
 package chat.db;
 
+import chat.common.ColorLogger;
 import chat.common.Conversazione;
 import chat.common.Messaggio;
 import chat.common.Utente;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -14,7 +13,7 @@ import java.util.List;
 
 // utilizzata principalmente solo per il recupero delle conversazioni di un utente
 public class GestioneChat {
-    private static final Logger logger = LoggerFactory.getLogger(GestioneChat.class);
+    ColorLogger colorLogger = new ColorLogger();
     private final MySQLManager dbManager;
 
     public GestioneChat(MySQLManager dbManager) {
@@ -75,7 +74,7 @@ public class GestioneChat {
                 conversazioni.add(new Conversazione(idChat, titolo, altroUtente));
             }
         } catch (SQLException e) {
-            logger.error("Errore durante il recupero delle conversazioni per l'utente {}", idUtenteLoggato, e);
+            colorLogger.logError("Errore durante il recupero delle conversazioni per l'utente " + idUtenteLoggato);
         }
         return conversazioni;
     }
@@ -119,11 +118,11 @@ public class GestioneChat {
                 messaggi.add(messaggio);
             }
         } catch (SQLException e) {
-            logger.error("Errore durante il recupero dei messaggi per la chat {}", idChat, e);
+            colorLogger.logError("Errore durante il recupero dei messaggi per la chat " + idChat);
             throw e;
         }
 
-        logger.info("Recuperati {} messaggi per la chat {}", messaggi.size(), idChat);
+        colorLogger.logInfo("Recuperati " + messaggi.size() + " messaggi per la chat " + idChat);
         return messaggi;
     }
 
@@ -172,7 +171,6 @@ public class GestioneChat {
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         int idChat = generatedKeys.getInt(1);
-                        logger.info("Creata nuova chat con ID: {}", idChat);
                         return idChat;
                     } else {
                         throw new SQLException("Creazione chat fallita, nessun ID ottenuto.");
@@ -182,7 +180,7 @@ public class GestioneChat {
                 throw new SQLException("Creazione chat fallita, nessuna riga inserita.");
             }
         } catch (SQLException e) {
-            logger.error("Errore durante la creazione della chat: {}", e.getMessage());
+            colorLogger.logError("Errore durante la creazione della chat: " + e.getMessage());
             throw e;
         }
     }

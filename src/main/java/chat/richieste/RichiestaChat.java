@@ -1,7 +1,5 @@
 package chat.richieste;
 
-import chat.common.Chat;
-import chat.common.Utente;
 
 import java.io.Serializable;
 

@@ -1,9 +1,6 @@
 package chat.server;
 
 import chat.common.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
@@ -12,7 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 public class Server {
-    private static final Logger logger = LoggerFactory.getLogger(Server.class);
+
+    ColorLogger colorLogger = new ColorLogger();
     // Questa HashMap associa ad ogni username di un utente il suo clientHandler (ovvero il thread) all'interno del server
     // Questa hashmap sembra non servire a niente? forse si può togliere?
     //private static ConcurrentHashMap<String, ClientHandler> clients = new ConcurrentHashMap<>();
@@ -35,7 +33,7 @@ public class Server {
                 new Thread(new ClientHandler(clientSocket, chats, clientHandlers)).start();
             }
         } catch (IOException e) {
-           logger.error(e.getMessage());
+           colorLogger.logError(e.getMessage());
         }
     }
 }

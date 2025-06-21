@@ -1,6 +1,5 @@
 package chat.richieste;
 
-import chat.richieste.TipoRichiesta;
 import chat.common.Conversazione;
 
 import java.util.List;
